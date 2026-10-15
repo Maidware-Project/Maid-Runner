@@ -8,6 +8,5 @@ Maid Runner is a launcher. how it is kept safe:
   a search query cannot become a command.
 - it launches your applications and opens search URLs in your browser. it
   downloads nothing on its own.
-- no telemetry, no accounts, nothing phones home.
 
 to report a problem, open an issue on the repository.
