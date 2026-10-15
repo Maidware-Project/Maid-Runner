@@ -58,6 +58,7 @@ def compute(text):
 
 class CalcSource:
     name = "Calculator"
+    show_subtitles = False
 
     def items(self, query):
         if not looks_like_math(query):

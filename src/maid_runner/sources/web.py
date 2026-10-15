@@ -32,6 +32,7 @@ def _looks_like_url(text):
 
 class WebSource:
     name = "Web"
+    show_subtitles = False
 
     def items(self, query):
         q = (query or "").strip()

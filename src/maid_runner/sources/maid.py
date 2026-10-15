@@ -57,6 +57,7 @@ ACTIONS = [
 
 class MaidSource:
     name = "Maid"
+    show_subtitles = True
 
     def items(self, query):
         q = (query or "").strip().lower()

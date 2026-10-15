@@ -25,6 +25,8 @@ unless it truly happened in this session.
 - Palette-only diffs between themes: never restructure one file
   without the other five.
 - Installer copies, never symlinks, backs up overwritten files.
+- CODE_OF_CONDUCT.md applies to code, comments, and docs:
+  technical scope, no politics, stay neutral.
 - Commit style: short lowercase summaries with a prefix (`fix:`,
   `feat:`, `docs:`, `tests:`, `chore:`), one logical change each.
   Sign off (`git commit -s`); AI work adds `Assisted-by:`.

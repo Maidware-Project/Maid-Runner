@@ -29,6 +29,7 @@ def _binaries():
 
 class RunSource:
     name = "Run"
+    show_subtitles = False
 
     def __init__(self):
         self._bins = _binaries()

@@ -3,7 +3,7 @@
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (QApplication, QHBoxLayout, QLabel, QLineEdit,
                              QListWidget, QListWidgetItem, QVBoxLayout,
-                             QWidget)
+                             QWidget, QStyleFactory)
 
 from .sources.apps import AppsSource
 from .sources.calc import CalcSource
@@ -11,16 +11,21 @@ from .sources.maid import MaidSource
 from .sources.run import RunSource
 from .sources.web import WebSource
 
+# Subtitle policy: "maid" (subtitles only on Maid rows), "all", "none".
+# Override locally with MAID_RUNNER_SUBTITLES; the repo default stays.
+import os
+SUBTITLE_MODE = os.environ.get("MAID_RUNNER_SUBTITLES", "maid")
+
 STYLE = """
-QWidget { background-color: #181818; color: #ECECEC; font-size: 15px; }
-QLineEdit { background-color: #242424; border: 1px solid #EFA8C4;
-    border-radius: 8px; padding: 10px 14px; selection-background-color: #EFA8C4; }
-QListWidget { background-color: #121212; border: none; outline: 0; }
+QWidget { background-color: #1a1b26; color: #c0caf5; selection-background-color: #5cb9ae; selection-color: #1a1b26; }
+QLineEdit { background-color: #24283b; border: 1px solid #488985; border-radius: 10px;
+    padding: 12px 14px; font-size: 15px; color: #c0caf5; selection-background-color: #5cb9ae; }
+QListWidget { background-color: #1a1b26; border: none; outline: 0; }
 QListWidget::item { padding: 2px; border: none; }
-QListWidget::item:selected { background-color: #2E2E2E; border-radius: 6px; }
-QLabel#source { color: #757575; font-size: 12px; }
-QLabel#title { color: #ECECEC; font-size: 15px; }
-QLabel#sub { color: #9A9A9A; font-size: 12px; }
+QListWidget::item:selected { background-color: #24283b; border-radius: 8px; }
+QLabel#source { color: #565f89; font-size: 12px; }
+QLabel#title { color: #c0caf5; font-size: 15px; }
+QLabel#sub { color: #565f89; font-size: 12px; }
 """
 
 
@@ -48,6 +53,8 @@ class RunnerWindow(QWidget):
         self.source_label.setObjectName("source")
         lay.addWidget(self.source_label)
         self.list = QListWidget(self)
+        self.list.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.list.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.list.itemActivated.connect(self.run_current)
         lay.addWidget(self.list)
 
@@ -77,6 +84,12 @@ class RunnerWindow(QWidget):
     def refresh(self):
         src = self.sources[self.source_idx]
         self.source_label.setText(f"{src.name} — TAB for next")
+        if SUBTITLE_MODE == "all":
+            show_sub = True
+        elif SUBTITLE_MODE == "none":
+            show_sub = False
+        else:
+            show_sub = getattr(src, "show_subtitles", False)
         self.rows = src.items(self.search.text())
         self.list.clear()
         for title, sub, _payload in self.rows[:40]:
@@ -88,7 +101,7 @@ class RunnerWindow(QWidget):
             t = QLabel(title)
             t.setObjectName("title")
             lay.addWidget(t)
-            if sub:
+            if show_sub and sub:
                 s = QLabel(sub)
                 s.setObjectName("sub")
                 lay.addWidget(s)
@@ -110,6 +123,11 @@ def main():
     app = QApplication.instance() or QApplication(sys.argv)
     app.setApplicationName("Maid Runner")
     app.setOrganizationName("Maidware Project")
+    # Fusion renders the Maid stylesheet predictably on every desktop;
+    # system style stays untouched for everything else.
+    fusion = QStyleFactory.create("Fusion")
+    if fusion is not None:
+        app.setStyle(fusion)
     win = RunnerWindow()
     win.show()
     win.search.setFocus()

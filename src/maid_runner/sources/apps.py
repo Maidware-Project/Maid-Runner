@@ -110,6 +110,7 @@ def load_apps(dirs=None):
 
 class AppsSource:
     name = "Applications"
+    show_subtitles = False
 
     def __init__(self, dirs=None):
         self._apps = load_apps(dirs)
