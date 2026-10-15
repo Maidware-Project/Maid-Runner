@@ -34,7 +34,7 @@ if [ "$UNINST" = "1" ]; then
   rm -f "$BINDIR"/maid-runner
   rm -rf "$LIBDIR"/maid-runner
   rm -f "$SHAREDIR"/applications/maid-runner.desktop
-  say "uninstalled (app, themes, entry out; your rofi config untouched — re-point @theme if it named a maid theme)"
+  say "uninstalled (app, themes, entry out; your rofi config untouched - re-point @theme if it named a maid theme)"
   exit 0
 fi
 
@@ -88,7 +88,7 @@ if [ -n "$pick" ]; then
       sed -i -e "s|^\(\s*\)@theme.*|\1@theme \"$themefile\"|" "$conf"
       say "theme set: $pick (config backed up)"
     else
-      say "no @theme line in $conf — set it by hand to: $themefile"
+      say "no @theme line in $conf - set it by hand to: $themefile"
     fi
   else
     say "no such theme: $pick (see list above)"

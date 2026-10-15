@@ -1,5 +1,5 @@
 """Calc source: safe arithmetic. AST allowlist only (no eval, no
-names except a few math constants) — typed text is untrusted input."""
+names except a few math constants) - typed text is untrusted input."""
 
 import ast
 import math

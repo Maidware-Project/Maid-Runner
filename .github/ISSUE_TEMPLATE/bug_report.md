@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Something broke — tell it plainly
+about: Something broke - tell it plainly
 title: "[bug] "
 ---
 
@@ -15,4 +15,4 @@ title: "[bug] "
 - Maid Runner commit:
 - Distro + Plasma version:
 
-## Diagnostics (paste terminal output — trim anything personal)
+## Diagnostics (paste terminal output - trim anything personal)

@@ -49,7 +49,7 @@ class RunnerWindow(QDialog):
         lay.setContentsMargins(14, 14, 14, 14)
         lay.setSpacing(8)
         self.search = QLineEdit(self)
-        self.search.setPlaceholderText("Type to search — TAB switches source, Enter runs")
+        self.search.setPlaceholderText("Type to search - TAB switches source, Enter runs")
         self.search.textChanged.connect(self.refresh)
         lay.addWidget(self.search)
         self.source_label = QLabel(self)
@@ -86,7 +86,7 @@ class RunnerWindow(QDialog):
 
     def refresh(self):
         src = self.sources[self.source_idx]
-        self.source_label.setText(f"{src.name} — TAB for next")
+        self.source_label.setText(f"{src.name} - TAB for next")
         if SUBTITLE_MODE == "all":
             show_sub = True
         elif SUBTITLE_MODE == "none":

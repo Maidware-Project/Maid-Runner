@@ -1,9 +1,9 @@
-# Maid Runner — search everything from one key
+# Maid Runner - search everything from one key
 
 category: launcher
 
 a small Qt search app for KDE Plasma: type, hit enter. TAB cycles
-sources — Applications (straight from the KDE menu data), Maid
+sources - Applications (straight from the KDE menu data), Maid
 (every suite action), Run (PATH commands), Calculator, Web. no
 accounts, no daemons, no indexing service.
 
@@ -22,12 +22,12 @@ install.sh            installer (files only, no packages)
 bash install.sh            # app + themes + launcher
 ```
 
-bind `maid-runner` to a key, or run it from rofi/dash once — it
+bind `maid-runner` to a key, or run it from rofi/dash once - it
 *is* an application entry itself.
 
 ## keybinding (your keys, your business)
 
-the repo never sets keybinds — that's personal config and stays on
+the repo never sets keybinds - that's personal config and stays on
 your machine. to bind it on Plasma:
 
 1. Settings → Keyboard → Shortcuts → Custom Shortcuts
@@ -41,24 +41,24 @@ empty query on Maid lists every suite action.
 
 ## sources
 
-- **Applications** — parsed from the same XDG menu data KDE shows
+- **Applications** - parsed from the same XDG menu data KDE shows
   (honors NoDisplay/Hidden/TryExec, flatpak exports included).
   terminal apps open in your terminal.
-- **Maid** — full use of the suite: earbuds to PC/phone/off/radio,
+- **Maid** - full use of the suite: earbuds to PC/phone/off/radio,
   system check/update, share to phone, receive from phone, helper
   check/fix. anything printing runs in a terminal; instant actions
   run silent.
-- **Run** — PATH binaries, always in a terminal so CLI tools work.
-- **Calculator** — safe arithmetic only (AST allowlist, never eval);
+- **Run** - PATH binaries, always in a terminal so CLI tools work.
+- **Calculator** - safe arithmetic only (AST allowlist, never eval);
   enter copies the result.
-- **Web** — `yt query`, `wiki query`, `gh query`, `g/ddg query`,
+- **Web** - `yt query`, `wiki query`, `gh query`, `g/ddg query`,
   bare URLs open directly, anything else asks DuckDuckGo.
 
 ## why not krunner / rofi / albert?
 
 krunner is plugins-in-process and does what Plasma says. rofi is
 superb but dumb (and themed separately). Maid Runner is one focused
-search box whose best source — the Maid tab — knows *your* system:
+search box whose best source - the Maid tab - knows *your* system:
 earbuds state, pending updates, share targets. plus: six matching
 rofi themes included for when PyQt6 isn't around.
 
@@ -76,7 +76,7 @@ bash install.sh --set mallow      # copy + activate maid-mallow
 ```
 
 or copy any file to `~/.config/rofi/themes/` and point `@theme`
-at it by hand. font line in each file is system monospace — set
+at it by hand. font line in each file is system monospace - set
 your own in one line.
 
 ## uninstall
@@ -90,4 +90,4 @@ named a maid theme).
 
 ## License
 
-MIT — see LICENSE. a Maidware Project, Forkable open source tools served to help
+MIT - see LICENSE. a Maidware Project, Forkable open source tools served to help
