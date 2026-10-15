@@ -1,16 +1,16 @@
 # AGENTS.md - Maid Runner (for AI assistants; humans see README.md)
 
-One maintainer plus a few friends helping out. Keep changes small enough
-to review, skip refactors nobody asked for, and ask before adding a
-dependency. Theme files are user-tweaked forks: keep the shared structure
-identical across all six (only the palette block differs) so diffs stay
-readable.
+One maintainer, a couple of friends, and a lot of rofi themes. Keep
+changes small enough to review, and ask before adding a dependency. Theme
+files are user-tweaked forks: keep the shared structure identical across
+all six, palette block aside, so diffs stay readable.
 
-Say what you actually did, not what you were asked to do. If a test or
-a look didn't happen this session, don't write that it did.
+Say what you actually did, not what you were asked to do. A UI bug hides
+well in a diff, so if you didn't launch the app or dump every theme, say
+so instead of ticking the box.
 
-The assistant helps, a person decides. Write so somebody can follow it
-with no assistant around: plain names, plain words, nothing clever.
+The assistant helps, a person decides. Comment for whoever debugs this
+next, not for the model that suggested it.
 
 ## Layout
 
