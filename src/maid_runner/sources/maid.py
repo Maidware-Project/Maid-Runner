@@ -12,7 +12,7 @@ def _b(name):
 
 
 ACTIONS = [
-    # Maid BT — earbuds switcher
+    # Maid BT - earbuds switcher
     ("Earbuds to PC", "Maid BT: connect + route audio",
      "bluetooth earbuds pc buds connect sound",
      ["bluetooth-toggle.sh", "on"], "bluetooth", False),
@@ -28,7 +28,7 @@ ACTIONS = [
     ("Bluetooth status", "Maid BT: state, buds, sink, watcher",
      "bluetooth status state buds",
      ["bluetooth-toggle.sh", "status"], "bluetooth", True),
-    # Maid AU — updater
+    # Maid AU - updater
     ("System update check", "Maid AU: dry run, what would update",
      "update upgrade check system packages",
      ["update-all.sh", "--check"], "software-update-available", True),
@@ -38,14 +38,14 @@ ACTIONS = [
     ("Last update", "Maid AU: when the last good run happened",
      "update last history log",
      ["update-all.sh", "--last"], "software-update-available", True),
-    # Maidshare — phone sharing
+    # Maidshare - phone sharing
     ("Share to phone", "Maidshare: pick a file, auto backend",
      "share send phone file kdeconnect",
      ["maidshare"], "kdeconnect", False),
     ("Receive from phone", "Maidshare: QR upload, browser, token URL",
      "share receive phone upload qr",
      ["maidshare", "--receive"], "kdeconnect", True),
-    # Maid Helper — first aid
+    # Maid Helper - first aid
     ("System check", "Maid Helper: read-only health report",
      "doctor fix help check health codecs gpu printer fonts",
      ["maid-helper", "--check"], "maid-helper", True),

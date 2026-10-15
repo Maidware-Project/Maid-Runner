@@ -17,7 +17,7 @@ ok "syntax"
 
 echo "== personal data =="
 # desktop Exec paths use the rewrite convention handled by install.sh
-# (same as every Maid project) — scanned everywhere except there.
+# (same as every Maid project) - scanned everywhere except there.
 if grep -rn --exclude-dir=__pycache__ -iE "AA:BB|RemoteApp|ExampleBuds|Liberty|example-host|10\.0\.0|/home/EXAMPLEUSER/|maple mono" \
     "$SRC" "$PKGDIR/README.md" "$PKGDIR/install.sh" "$PKGDIR/bin" 2>/dev/null; then
   fail "personal string leaked"
@@ -166,7 +166,7 @@ if command -v rofi >/dev/null 2>&1; then
   [ "$n" -ge 6 ] || fail "expected 6+ themes, found $n"
   ok "all themes parse ($n)"
 else
-  echo "(no rofi here — theme parse skipped)"
+  echo "(no rofi here - theme parse skipped)"
   ok "themes skipped (no rofi)"
 fi
 

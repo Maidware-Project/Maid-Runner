@@ -1,13 +1,16 @@
-# AGENTS.md — Maid Runner (for AI assistants; humans see README.md)
+# AGENTS.md - Maid Runner (for AI assistants; humans see README.md)
 
-One maintainer plus friends helping out — keep every change small,
-reviewable, and justified. Theme files are user-tweaked forks: keep
-the shared structure identical across all six (palette block only
-differs) so diffs stay readable.
+One maintainer plus a few friends helping out. Keep changes small enough
+to review, skip refactors nobody asked for, and ask before adding a
+dependency. Theme files are user-tweaked forks: keep the shared structure
+identical across all six (only the palette block differs) so diffs stay
+readable.
 
-Honesty is non-negotiable: say what you actually did versus what you
-were asked to do. Never claim a test ran or a look was verified
-unless it truly happened in this session.
+Say what you actually did, not what you were asked to do. If a test or
+a look didn't happen this session, don't write that it did.
+
+The assistant helps, a person decides. Write so somebody can follow it
+with no assistant around: plain names, plain words, nothing clever.
 
 ## Layout
 
@@ -20,7 +23,7 @@ unless it truly happened in this session.
 
 ## Rules
 
-- No personal data in repo (no font names that assume a setup —
+- No personal data in repo (no font names that assume a setup -
   themes use system monospace; document font overrides in README).
 - Palette-only diffs between themes: never restructure one file
   without the other five.
@@ -33,11 +36,11 @@ unless it truly happened in this session.
 
 ## Verify
 
-- `bash tests/run.sh` — pure-python unit tests, offscreen app smoke
+- `bash tests/run.sh` - pure-python unit tests, offscreen app smoke
   test, rofi -dump on every theme, fake-HOME install/uninstall.
   needs PyQt6 + rofi installed (CI has both).
-- `bash install.sh --check` — dry run, must write nothing.
-- Personal-data grep lives in tests/run.sh — keep it green
+- `bash install.sh --check` - dry run, must write nothing.
+- Personal-data grep lives in tests/run.sh - keep it green
   (notably: no font names assuming a setup, no machine specifics).
 
 Before finishing: pass docs/REVIEW.md.
