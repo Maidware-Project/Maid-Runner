@@ -47,16 +47,16 @@ assert compute("__import__('os').system('x')") is None
 
 w = WebSource()
 assert w.items("")[0] == [] if False else True
-rows = dict((t, u) for t, s, u in w.items("yt cats"))
+rows = dict((t, u) for t, s, _, u in w.items("yt cats"))
 assert "youtube.com" in rows["cats"]
-assert w.items("example.com")[0][2] == "https://example.com"
+assert w.items("example.com")[0][3] == "https://example.com"
 assert w.items("x") == []
 
 m = MaidSource()
 allrows = m.items("")
 assert len(allrows) == len(ACTIONS) and len(allrows) >= 10
-assert any("Earbuds to PC" in t for t, _, _ in m.items("buds"))
-assert any("System update" in t for t, _, _ in m.items("update"))
+assert any("Earbuds to PC" in t for t, _, _, _ in m.items("buds"))
+assert any("System update" in t for t, _, _, _ in m.items("update"))
 print("unit checks passed")
 EOF
 ok "unit checks"
