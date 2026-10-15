@@ -1,9 +1,10 @@
 """Maid Runner window: one search box, TAB cycles sources."""
 
 from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import (QApplication, QHBoxLayout, QLabel, QLineEdit,
-                             QListWidget, QListWidgetItem, QVBoxLayout,
-                             QWidget, QStyleFactory)
+from PyQt6.QtGui import QIcon
+from PyQt6.QtWidgets import (QApplication, QDialog, QHBoxLayout, QLabel,
+                             QLineEdit, QListWidget, QListWidgetItem,
+                             QVBoxLayout, QWidget, QStyleFactory)
 
 from .sources.apps import AppsSource
 from .sources.calc import CalcSource
@@ -26,15 +27,17 @@ QListWidget::item:selected { background-color: #24283b; border-radius: 8px; }
 QLabel#source { color: #565f89; font-size: 12px; }
 QLabel#title { color: #c0caf5; font-size: 15px; }
 QLabel#sub { color: #565f89; font-size: 12px; }
+QLabel#icon { background-color: transparent; }
 """
 
 
-class RunnerWindow(QWidget):
+class RunnerWindow(QDialog):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Maid Runner")
-        self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
-        self.resize(600, 430)
+        # dialog windows center on screen under KWin; plain widgets do not
+        self.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.FramelessWindowHint)
+        self.setFixedSize(600, 430)
         self.setStyleSheet(STYLE)
 
         self.sources = [AppsSource(), MaidSource(), RunSource(),
@@ -92,19 +95,31 @@ class RunnerWindow(QWidget):
             show_sub = getattr(src, "show_subtitles", False)
         self.rows = src.items(self.search.text())
         self.list.clear()
-        for title, sub, _payload in self.rows[:40]:
+        for title, sub, icon, _payload in self.rows[:40]:
             item = QListWidgetItem()
             w = QWidget()
-            lay = QVBoxLayout(w)
-            lay.setContentsMargins(10, 6, 10, 6)
-            lay.setSpacing(0)
+            row = QHBoxLayout(w)
+            row.setContentsMargins(10, 6, 10, 6)
+            row.setSpacing(10)
+            if icon:
+                pic = QLabel()
+                pic.setObjectName("icon")
+                pm = QIcon.fromTheme(icon).pixmap(28, 28)
+                if not pm.isNull():
+                    pic.setPixmap(pm)
+                    pic.setFixedSize(28, 28)
+                    row.addWidget(pic)
+            col = QVBoxLayout()
+            col.setContentsMargins(0, 0, 0, 0)
+            col.setSpacing(0)
             t = QLabel(title)
             t.setObjectName("title")
-            lay.addWidget(t)
+            col.addWidget(t)
             if show_sub and sub:
                 s = QLabel(sub)
                 s.setObjectName("sub")
-                lay.addWidget(s)
+                col.addWidget(s)
+            row.addLayout(col, 1)
             item.setSizeHint(w.sizeHint())
             self.list.addItem(item)
             self.list.setItemWidget(item, w)
@@ -113,7 +128,7 @@ class RunnerWindow(QWidget):
     def run_current(self):
         row = self.list.currentRow()
         if 0 <= row < len(self.rows):
-            _t, _s, payload = self.rows[row]
+            _t, _s, _icon, payload = self.rows[row]
             if self.sources[self.source_idx].activate(payload):
                 self.close()
 
