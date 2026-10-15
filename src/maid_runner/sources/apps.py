@@ -48,6 +48,7 @@ def _parse_desktop(path):
         "generic": (e.get("GenericName") or "").strip(),
         "comment": (e.get("Comment") or "").strip(),
         "keywords": (e.get("Keywords") or "").strip(),
+        "icon": (e.get("Icon") or "").strip(),
         "exec": exec_line,
         "terminal": e.get("Terminal", "false").lower() == "true",
     }
@@ -112,16 +113,13 @@ class AppsSource:
     name = "Applications"
     show_subtitles = False
 
-    def items(self, query):
-        ...
-
     def __init__(self, dirs=None):
         self._apps = load_apps(dirs)
 
     def items(self, query):
         q = (query or "").strip()
         if not q:
-            return [(a["name"], a["generic"] or a["comment"], a)
+            return [(a["name"], a["generic"] or a["comment"], a["icon"], a)
                     for a in sorted(self._apps, key=lambda a: a["name"].lower())]
         scored = []
         for a in self._apps:
@@ -129,7 +127,7 @@ class AppsSource:
             if r is not None:
                 scored.append((r, a["name"].lower(), a))
         scored.sort(key=lambda t: (t[0], t[1]))
-        return [(a["name"], a["generic"] or a["comment"], a) for _, _, a in scored]
+        return [(a["name"], a["generic"] or a["comment"], a["icon"], a) for _, _, a in scored]
 
     def activate(self, app):
         argv = shlex.split(_clean_exec(app["exec"]))

@@ -50,7 +50,7 @@ class RunSource:
             elif fl in bl:
                 scored.append((2, b))
         scored.sort()
-        return [(b, ("run: " + q) if rest else "run in terminal", (b, rest))
+        return [(b, ("run: " + q) if rest else "run in terminal", "system-run", (b, rest))
                 for _, b in scored[:25]]
 
     def activate(self, payload):

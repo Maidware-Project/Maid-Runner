@@ -41,20 +41,20 @@ class WebSource:
         if q.startswith("!") and len(q) > 1:
             # duckduckgo bang: resolved server-side (!yt, !w, !aw, ...
             # thousands more). never maintained here, never stale.
-            return [(q, "duckduckgo bang",
+            return [(q, "duckduckgo bang", "internet-web-browser",
                      f"https://duckduckgo.com/?q={_quote(q)}")]
         if "://" in q:
-            return [(q, "open URL", q)]
+            return [(q, "open URL", "internet-web-browser", q)]
         first, _, rest = q.partition(" ")
         if first in SHORTCUTS and rest:
             label, tmpl = SHORTCUTS[first]
-            return [(rest, f"search {label}", tmpl.format(_quote(rest)))]
+            return [(rest, f"search {label}", "internet-web-browser", tmpl.format(_quote(rest)))]
         if _looks_like_url(q):
             url = q if "://" in q else "https://" + q
-            return [(q, "open URL", url)]
+            return [(q, "open URL", "internet-web-browser", url)]
         if len(q) > 1:
             label, tmpl = SHORTCUTS["ddg"]
-            return [(q, f"search {label}", tmpl.format(_quote(q)))]
+            return [(q, f"search {label}", "internet-web-browser", tmpl.format(_quote(q)))]
         return []
 
     def activate(self, url):

@@ -66,7 +66,7 @@ class CalcSource:
         val = compute(query)
         if val is None:
             return []
-        return [(str(val), "enter copies to clipboard", str(val))]
+        return [(str(val), "enter copies to clipboard", "accessories-calculator", str(val))]
 
     def activate(self, payload):
         from PyQt6.QtWidgets import QApplication
