@@ -112,6 +112,9 @@ class AppsSource:
     name = "Applications"
     show_subtitles = False
 
+    def items(self, query):
+        ...
+
     def __init__(self, dirs=None):
         self._apps = load_apps(dirs)
 
