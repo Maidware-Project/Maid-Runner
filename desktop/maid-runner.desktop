@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Maid Runner
+Comment=Search apps, commands, windows and ssh hosts from one key
+Exec=/home/visa/.local/bin/maid-runner
+Icon=system-search
+Terminal=false
+Type=Application
+Categories=Utility;
+Keywords=run;launcher;search;krunner;rofi;command;window;ssh;

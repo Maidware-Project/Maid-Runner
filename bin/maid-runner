@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Maid Runner entry: the Qt app when PyQt6 + a display exist,
+# rofi combi otherwise. Extra args pass through to whichever runs.
+set -u
+HERE="$(cd "$(dirname "$0")" && pwd)"
+PKG="$HERE/../lib/maid-runner"
+
+has_display() { [ -n "${WAYLAND_DISPLAY:-}" ] || [ -n "${DISPLAY:-}" ]; }
+has_pyqt() { python3 -c "import PyQt6" 2>/dev/null; }
+
+if [ -d "$PKG" ] && has_pyqt && has_display; then
+  PYTHONPATH="$PKG" exec python3 -m maid_runner "$@"
+fi
+
+# fallback: rofi combi (apps, commands, windows, ssh)
+MODES="${MAID_RUNNER_MODES:-drun,run,window,ssh}"
+command -v rofi >/dev/null 2>&1 || { echo "Maid Runner needs PyQt6 or rofi." >&2; exit 2; }
+exec rofi -show combi -modes combi -combi-modes "$MODES" "$@"
