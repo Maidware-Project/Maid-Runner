@@ -18,7 +18,7 @@ ok "syntax"
 echo "== personal data =="
 # desktop Exec paths use the rewrite convention handled by install.sh
 # (same as every Maid project) — scanned everywhere except there.
-if grep -rni -E "90:BF|SmartAction|soundcore|Liberty|Mothership|10\.0\.0|/home/visa|maple mono" \
+if grep -rn --exclude-dir=__pycache__ -iE "90:BF|SmartAction|soundcore|Liberty|Mothership|10\.0\.0|/home/visa|maple mono" \
     "$SRC" "$PKGDIR/README.md" "$PKGDIR/install.sh" "$PKGDIR/bin" 2>/dev/null; then
   fail "personal string leaked"
 fi
@@ -111,23 +111,46 @@ rm -rf /tmp/mr-xdg2 && mkdir -p /tmp/mr-xdg2/applications
 printf '[Desktop Entry]\nName=Smoke App\nExec=/usr/bin/smoke\nType=Application\n' > /tmp/mr-xdg2/applications/smoke.desktop
 QT_QPA_PLATFORM=offscreen XDG_DATA_HOME=/tmp/mr-xdg2 XDG_DATA_DIRS=/nonexistent PYTHONPATH="$SRC" python3 - <<'EOF' || fail "offscreen smoke"
 from maid_runner.app import RunnerWindow
-from PyQt6.QtWidgets import QApplication
+from PyQt6.QtWidgets import QApplication, QLabel
 import sys
 app = QApplication.instance() or QApplication(sys.argv)
 w = RunnerWindow()
+def titles():
+    out = []
+    for i in range(w.list.count()):
+        itw = w.list.itemWidget(w.list.item(i))
+        lab = itw.findChild(QLabel, "title") if itw is not None else None
+        out.append(lab.text() if lab is not None else "")
+    return out
+def sub_count():
+    n = 0
+    for i in range(w.list.count()):
+        itw = w.list.itemWidget(w.list.item(i))
+        if itw is not None and itw.findChild(QLabel, "sub"):
+            n += 1
+    return n
+names = [s.name for s in w.sources]
 assert w.list.count() > 0, "empty app list"
 w.search.setText("smoke")
 app.processEvents()
-assert w.list.count() >= 1, "search found nothing"
+assert titles() == ["Smoke App"], titles()
 w.search.setText("2+3*4")
 app.processEvents()
-assert any("14" in w.list.item(i).text() or True for i in range(w.list.count()))
-# calc tab: index of Calculator
-names = [s.name for s in w.sources]
+assert w.list.count() == 0, "math query must not match apps"
+# calc tab answers the math
 w.source_idx = names.index("Calculator")
 w.refresh(); app.processEvents()
-texts = [w.list.item(i).text() for i in range(w.list.count())]
-assert any(t.startswith("14") for t in texts), texts
+assert titles() == ["14"], titles()
+# applications tab: single-line rows, no subtitles
+w.source_idx = names.index("Applications")
+w.search.setText("smoke")
+w.refresh(); app.processEvents()
+assert titles() == ["Smoke App"] and sub_count() == 0, "apps rows must be single-line"
+# maid tab: subtitles stay (the one place they earn their pixels)
+w.source_idx = names.index("Maid")
+w.search.setText("")
+w.refresh(); app.processEvents()
+assert w.list.count() >= 1 and sub_count() >= 1, "maid rows need subtitles"
 print("offscreen smoke passed")
 EOF
 ok "offscreen smoke"
@@ -163,7 +186,7 @@ HOME=/tmp/mr-home bash "$PKGDIR/install.sh" --check >/dev/null 2>&1 || fail "ins
 ok "installer dry run clean"
 
 echo "== install + uninstall =="
-HOME=/tmp/mr-home bash "$PKGDIR/install.sh" --no-packages </dev/null >/dev/null 2>&1 || fail "fake install crashed"
+HOME=/tmp/mr-home bash "$PKGDIR/install.sh" </dev/null >/dev/null 2>&1 || fail "fake install crashed"
 [ -x /tmp/mr-home/.local/bin/maid-runner ] || fail "wrapper missing"
 [ -f /tmp/mr-home/.local/lib/maid-runner/maid_runner/app.py ] || fail "package missing"
 [ -f /tmp/mr-home/.local/share/applications/maid-runner.desktop ] || fail "desktop missing"
