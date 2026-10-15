@@ -1,5 +1,7 @@
 # Maid Runner — search everything from one key
 
+category: launcher
+
 a small Qt search app for KDE Plasma: type, hit enter. TAB cycles
 sources — Applications (straight from the KDE menu data), Maid
 (every suite action), Run (PATH commands), Calculator, Web. no
