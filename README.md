@@ -1,4 +1,4 @@
-# maid runner - search everything from one key
+# Maid Runner - search everything from one key
 
 command-line helper (qt app with rofi fallback). small search box for kde plasma: type, hit enter. tab cycles sources - applications (from kde menu), maid (suite actions), run (path commands), calculator, web. no accounts, no daemons, no indexing service.
 
@@ -20,7 +20,7 @@ bash install.sh            # app + themes + launcher
 bind `maid-runner` to a key, or run it from rofi/dash once - it
 *is* an application entry itself.
 
-## keybinding (your keys, your business)
+## keybinding 
 
 the repo never sets keybinds - that's personal config and stays on
 your machine. to bind it on Plasma:
