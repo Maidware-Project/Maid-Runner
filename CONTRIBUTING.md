@@ -24,6 +24,8 @@ to humans and AI assistants alike. maintained by Maidware Project.
   Qt launch, a parse of all six themes, a check that their structure still
   matches, and a fake-HOME install/uninstall.
 - `bash install.sh --check` writes nothing
+- CI must be green before review - a green run on your machine is the
+  start, not the finish
 - changed a theme? keep it a palette-only diff and say which one you
   looked at on screen
 - no personal data anywhere. the suite scans for it, minus the desktop
@@ -37,6 +39,10 @@ explain it, don't send it.
 basic linux expected: the terminal, permissions, sudo, `~/.config`. not an
 expert, but this launcher runs on other people's machines, so guessing
 isn't contributing.
+
+reviewers here are people, not bots: expect to answer questions about your
+patch, and don't open one you can't back up. unattended drive-by or bot
+PRs get closed.
 
 ## issues
 
