@@ -12,6 +12,16 @@ so instead of ticking the box.
 The assistant helps, a person decides. Comment for whoever debugs this
 next, not for the model that suggested it.
 
+## What you can't do here
+
+- The app is Qt. A real look at it needs PyQt6 and a display; the suite
+  runs an offscreen smoke test, which is not the same as using the window.
+- Themes are dumped and checked, not seen. A theme can dump clean and
+  still look wrong on screen.
+- Source actions call out to real system tools (bluetooth, package
+  managers, kdeconnect). The suite fakes those, so it proves the wiring,
+  not the outcome.
+
 ## Layout
 
 - `src/maid_runner/` the Qt app (app window + per-source modules)
@@ -32,7 +42,22 @@ next, not for the model that suggested it.
   technical scope, no politics, stay neutral.
 - Commit style: short lowercase summaries with a prefix (`fix:`,
   `feat:`, `docs:`, `tests:`, `chore:`), one logical change each.
-  Sign off (`git commit -s`).
+  Sign off - the trailer is exactly `Signed-off-by: visa`, no email.
+
+## Never
+
+- Never push. The maintainer pushes; commits stay local until asked.
+- Never restructure one theme without the other five; palettes are the
+  only intended difference.
+- Never assume a font or a machine setup; themes use system monospace.
+- Never report a launched app or a dumped theme you did not run.
+
+## Boundaries (do not touch)
+
+- The shared structure of the six `themes/maid-*.rasi` files.
+- The fallback contract in `bin/maid-runner`: Qt when PyQt6 + display
+  exist, rofi combi otherwise.
+- The installer contract: copies, never symlinks, backs up.
 
 ## Verify
 
@@ -43,4 +68,20 @@ next, not for the model that suggested it.
 - Personal-data grep lives in tests/run.sh - keep it green
   (notably: no font names assuming a setup, no machine specifics).
 
-Before finishing: pass docs/REVIEW.md.
+## Making a change
+
+1. `git status -sb` first. A commit or a sync can land while you work,
+   and amending something already pushed leaves duplicate commits.
+2. Make the smallest diff that solves the stated problem.
+3. Run `bash tests/run.sh` and `bash install.sh --check`.
+4. If it shows in the app or a theme, look at it - offscreen, or on your
+   desktop - and say which it was.
+5. Pass `docs/REVIEW.md`, then commit with a sign-off. Do not push.
+
+## References
+
+- `README.md` - what it does, themes, keybinds, font overrides
+- `docs/REVIEW.md` - the checklist to pass before a change ships
+- `CONTRIBUTING.md` - how to take part
+- `CODE_OF_CONDUCT.md` - scope, and what stays out of the repo
+- `SECURITY.md` - how to report a security problem
