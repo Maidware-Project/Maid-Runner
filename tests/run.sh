@@ -157,22 +157,31 @@ ok "offscreen smoke"
 rm -rf /tmp/mr-xdg2
 
 echo "== themes parse =="
+# X11 rofi opens the display before handling -dump-theme, so it cannot
+# validate themes on a headless runner (or an ssh session). use xvfb-run
+# when there is no session display, and skip when neither exists.
+ROFI=""
 if command -v rofi >/dev/null 2>&1; then
+  if [ -n "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ]; then
+    ROFI=rofi
+  elif command -v xvfb-run >/dev/null 2>&1; then
+    ROFI="xvfb-run -a rofi"
+  fi
+fi
+if [ -n "$ROFI" ]; then
   n=0
   for f in "$PKGDIR"/themes/maid-*.rasi; do
-    # there is no rofi `-dump` flag. old rofi ignored the unknown option and
-    # exited 0, so this never parsed a theme on a dev box, while ubuntu's rofi
-    # rejected it and failed every theme. -dump-theme is the real flag, and a
-    # broken theme only warns on stderr while still exiting 0 - so read stderr.
-    errs=$(rofi -dump-theme -theme "$f" 2>&1 >/dev/null) || fail "unparsable: $(basename "$f")"
+    # -dump-theme is the real flag, and a broken theme only warns on
+    # stderr while still exiting 0 - so read stderr.
+    errs=$($ROFI -dump-theme -theme "$f" 2>&1 >/dev/null) || fail "unparsable: $(basename "$f")"
     case "$errs" in *"Failed to parse"*) fail "unparsable: $(basename "$f")" ;; esac
     n=$((n + 1))
   done
   [ "$n" -ge 6 ] || fail "expected 6+ themes, found $n"
   ok "all themes parse ($n)"
 else
-  echo "(no rofi here - theme parse skipped)"
-  ok "themes skipped (no rofi)"
+  echo "(no usable rofi here - theme parse skipped)"
+  ok "themes skipped"
 fi
 
 echo "== structure identical =="
