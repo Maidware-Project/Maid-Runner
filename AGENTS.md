@@ -32,7 +32,7 @@ next, not for the model that suggested it.
   technical scope, no politics, stay neutral.
 - Commit style: short lowercase summaries with a prefix (`fix:`,
   `feat:`, `docs:`, `tests:`, `chore:`), one logical change each.
-  Sign off (`git commit -s`); AI work adds `Assisted-by:`.
+  Sign off (`git commit -s`).
 
 ## Verify
 
