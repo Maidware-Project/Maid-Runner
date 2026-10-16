@@ -16,3 +16,9 @@ title: "[bug] "
 - Distro + Plasma version:
 
 ## Diagnostics (paste terminal output - trim anything personal)
+
+<!-- attaching logs/screenshots is mandatory if they exist. -->
+
+---
+
+**note:** before filing, please read `AGENTS.md` in this repo - it's there for a reason.
