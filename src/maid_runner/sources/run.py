@@ -55,5 +55,8 @@ class RunSource:
 
     def activate(self, payload):
         b, rest = payload
-        argv = [b] + shlex.split(rest) if rest else [b]
+        try:
+            argv = [b] + shlex.split(rest) if rest else [b]
+        except ValueError:
+            return False
         return launch(argv, terminal=True)
