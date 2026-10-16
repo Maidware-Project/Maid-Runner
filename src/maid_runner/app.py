@@ -62,8 +62,8 @@ class RunnerWindow(QDialog):
         lay.addWidget(self.list)
 
         screen = QApplication.primaryScreen().availableGeometry()
-        self.move(screen.center().x() - 300,
-                 screen.center().y() - 215)
+        self.move(int(screen.center().x() - self.width() // 2),
+                  int(screen.center().y() - self.height() // 2))
         self.refresh()
 
     def keyPressEvent(self, event):  # noqa: N802
