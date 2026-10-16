@@ -160,7 +160,12 @@ echo "== themes parse =="
 if command -v rofi >/dev/null 2>&1; then
   n=0
   for f in "$PKGDIR"/themes/maid-*.rasi; do
-    rofi -dump -theme "$f" >/dev/null 2>&1 || fail "unparsable: $(basename "$f")"
+    # there is no rofi `-dump` flag. old rofi ignored the unknown option and
+    # exited 0, so this never parsed a theme on a dev box, while ubuntu's rofi
+    # rejected it and failed every theme. -dump-theme is the real flag, and a
+    # broken theme only warns on stderr while still exiting 0 - so read stderr.
+    errs=$(rofi -dump-theme -theme "$f" 2>&1 >/dev/null) || fail "unparsable: $(basename "$f")"
+    case "$errs" in *"Failed to parse"*) fail "unparsable: $(basename "$f")" ;; esac
     n=$((n + 1))
   done
   [ "$n" -ge 6 ] || fail "expected 6+ themes, found $n"
