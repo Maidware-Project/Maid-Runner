@@ -1,11 +1,6 @@
-# Maid Runner - search everything from one key
+# maid runner - search everything from one key
 
-category: launcher
-
-a small Qt search app for KDE Plasma: type, hit enter. TAB cycles
-sources - Applications (straight from the KDE menu data), Maid
-(every suite action), Run (PATH commands), Calculator, Web. no
-accounts, no daemons, no indexing service.
+command-line helper (qt app with rofi fallback). small search box for kde plasma: type, hit enter. tab cycles sources - applications (from kde menu), maid (suite actions), run (path commands), calculator, web. no accounts, no daemons, no indexing service.
 
 ```
 src/maid_runner/      the Qt app (window + one module per source)
