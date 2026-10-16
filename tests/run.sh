@@ -19,7 +19,7 @@ echo "== personal data =="
 # desktop Exec paths use the rewrite convention handled by install.sh
 # (same as every Maid project) - scanned everywhere except there.
 if grep -rn --exclude-dir=__pycache__ -iE "AA:BB|RemoteApp|ExampleBuds|Liberty|example-host|10\.0\.0|/home/EXAMPLEUSER/|maple mono" \
-    "$SRC" "$PKGDIR/README.md" "$PKGDIR/install.sh" "$PKGDIR/bin" 2>/dev/null; then
+    "$SRC" "$PKGDIR/README.md" "$PKGDIR/install.sh" "$PKGDIR/bin" 2>/dev/null | grep -v "s|/home/EXAMPLEUSER/|"; then
   fail "personal string leaked"
 fi
 ok "no personal data"
@@ -33,7 +33,7 @@ from maid_runner.sources.maid import MaidSource, ACTIONS
 from maid_runner.sources.run import RunSource
 
 a = {"name": "LibreWolf", "generic": "Web Browser", "keywords": "internet;www;"}
-assert rank("lib", a) is not None and rank("lib", a) < rank("wolf", a) or True
+assert rank("lib", a) is not None and rank("lib", a) < rank("wolf", a)
 assert rank("libre", a) == 0
 assert rank("zzzqqq", a) is None
 assert rank("bwser", a) is not None  # fuzzy fallback

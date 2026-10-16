@@ -39,17 +39,22 @@ if [ "$UNINST" = "1" ]; then
 fi
 
 copy_one() {
-  local src="$1" dest="$2" tmp=""
+  local src="$1" dest="$2" tmp="" rewrite="${3:-0}"
   if [ "$CHECK" = "1" ]; then echo "COPY $dest"; return 0; fi
   mkdir -p "$(dirname "$dest")"
   tmp="$(mktemp)" || return 1
-  cp -a "$src" "$tmp"
+  trap 'rm -f "$tmp"' RETURN
+  if [ "$rewrite" = "1" ]; then
+    # escape & (sed replacement metachar) in $HOME
+    sed -e "s|/home/EXAMPLEUSER/|${HOME//&/\\&}|g" "$src" > "$tmp"
+  else
+    cp -a "$src" "$tmp"
+  fi
   if [ -e "$dest" ] && ! cmp -s "$tmp" "$dest"; then
     cp -a "$dest" "${dest}.bak-${BACKUP_TS}"
     say "backed up $dest"
   fi
   cat "$tmp" > "$dest"
-  rm -f "$tmp"
   echo "installed $dest"
 }
 
@@ -60,10 +65,11 @@ done
 copy_one "$PKGDIR/bin/maid-runner" "$BINDIR/maid-runner"
 [ "$CHECK" = "0" ] && chmod +x "$BINDIR"/maid-runner 2>/dev/null || true
 # app package (Qt sources); the wrapper resolves it via ../lib
-mkdir -p "$LIBDIR/maid-runner"
-for f in $(cd "$PKGDIR/src" && find maid_runner -name "*.py"); do
+[ "$CHECK" = "1" ] || mkdir -p "$LIBDIR/maid-runner"
+cd "$PKGDIR/src" || { say "missing src tree: $PKGDIR/src"; exit 1; }
+while IFS= read -r -d '' f; do
   copy_one "$PKGDIR/src/$f" "$LIBDIR/maid-runner/$f"
-done
+done < <(find maid_runner -name "*.py" -print0)
 copy_one "$PKGDIR/desktop/maid-runner.desktop" \
   "$SHAREDIR/applications/maid-runner.desktop" $REWRITE
 [ "$CHECK" = "1" ] && { say "(check only, nothing changed)"; exit 0; }
@@ -85,7 +91,7 @@ if [ -n "$pick" ]; then
     if [ -f "$conf" ] && grep -q "@theme" "$conf"; then
       cp -a "$conf" "${conf}.bak-${BACKUP_TS}"
       # shellcheck disable=SC2086
-      sed -i -e "s|^\(\s*\)@theme.*|\1@theme \"$themefile\"|" "$conf"
+      sed -i -e "s|^\(\s*\)@theme.*|\1@theme \"${themefile//&/\\&}\"|" "$conf"
       say "theme set: $pick (config backed up)"
     else
       say "no @theme line in $conf - set it by hand to: $themefile"
