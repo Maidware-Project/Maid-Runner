@@ -1,23 +1,25 @@
 # Maid Runner - search everything from one key
 
-command-line helper (qt app with rofi fallback). centered search card over a dimmed backdrop, rofi-style, for kde plasma: type, hit enter. tab cycles sources - applications (from kde menu), maid (suite actions), run (path commands), calculator, web. no accounts, no daemons, no indexing service.
+a launcher and search box (Qt) for kde plasma: a centered search card over a dimmed backdrop. type, hit enter. tab cycles sources - applications (from kde menu), maid (suite actions), run (path commands), calculator, web. caps lock cycles the six Maid Scroll palettes. no accounts, no daemons, no indexing service.
 
 ```
-src/maid_runner/      the Qt app (window + one module per source)
-bin/maid-runner       entry: Qt app when PyQt6 + display exist,
-                      rofi combi fallback otherwise
-themes/maid-*.rasi    six drun themes for the fallback (same layout)
-desktop/              launcher icon (pin it, bind a key to it)
-install.sh            installer (files only, no packages)
+src/maid_runner/             the Qt app (window + one module per source)
+src/maid_runner/palettes.py  the six palettes (Maid Scroll source of truth)
+src/maid_runner/scroll.py    list/scroll/set the palette, no display needed
+bin/maid-runner              entry: the Qt app (rofi combi fallback otherwise)
+bin/maid-scroll              terminal entry for the palettes
+themes/maid-*.rasi           the same six palettes as drun themes (fallback)
+desktop/                     launcher icon (pin it, bind a key to it)
+install.sh                   installer (files only, no packages)
 ```
 
 ## quick start
 
 ```sh
-bash install.sh            # app + themes + launcher
+bash install.sh            # app + palettes + launcher
 ```
 
-bind `maid-runner` to a key, or run it from rofi/dash once - it
+bind `maid-runner` to a key, or run it from your apps menu once - it
 *is* an application entry itself.
 
 ## keybinding 
@@ -29,11 +31,9 @@ your machine. to bind it on Plasma:
 2. Add → Command/URL, command: `~/.local/bin/maid-runner`
 3. set whatever key feels right (Meta+Space is the classic runner key)
 
-rofi fallback users: same steps with whatever rofi command you run.
-
 type to filter, TAB to change source (shift+TAB goes back), enter to
 run, esc - or a click outside the card - closes. caps lock cycles the
-six palette themes.
+six palettes and stores the pick, so the next launch opens on it.
 empty query on Maid lists every suite action.
 
 ## sources
@@ -59,24 +59,27 @@ search box whose best source - the Maid tab - knows *your* system:
 earbuds state, pending updates, share targets. plus: six matching
 rofi themes included for when PyQt6 isn't around.
 
-tested on openSUSE Tumbleweed (KDE Plasma 6, Wayland) with PyQt6 +
-Qt 6.
-
 ## themes
 
-same comfortable drun layout in six palettes (only colors differ,
-so diffs stay readable): `maid-dark` (breeze match), `maid-light`,
-`maid-tokyo`, `maid-mallow`, `maid-green`, `maid-blue`. the qt app
-loads the same six palettes - caps lock cycles them and it opens
-on `maid-tokyo`.
+six palettes ship in the app and as matching drun themes (only the
+palette block differs, so diffs stay readable): `dark` (breeze match),
+`light`, `tokyo` (the default), `mallow`, `green`, `blue`. the chosen
+one is one line of state under `~/.config/maid-scroll/`, written by the
+app (caps lock) and by `maid-scroll`:
+
+```sh
+maid-scroll list         # every palette, star on the current one
+maid-scroll next         # advance one, keep it
+maid-scroll set mallow   # jump straight to one
+```
+
+the drun themes are the fallback for when PyQt6 or a display is
+missing; each uses system monospace - set your own in one line. the
+installer can point the fallback at one:
 
 ```sh
 bash install.sh --set mallow      # copy + activate maid-mallow
 ```
-
-or copy any file to `~/.config/rofi/themes/` and point `@theme`
-at it by hand. font line in each file is system monospace - set
-your own in one line.
 
 ## uninstall
 
