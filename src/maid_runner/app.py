@@ -21,6 +21,7 @@ from PyQt6.QtWidgets import (QApplication, QDialog, QFrame,
                              QWidget)
 
 from .palettes import PALETTES, index_of, load, save
+from .suite import any_installed
 from .sources.apps import AppsSource
 from .sources.calc import CalcSource
 from .sources.maid import MaidSource
@@ -75,8 +76,13 @@ class RunnerWindow(QDialog):
         self.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.FramelessWindowHint)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
 
-        self.sources = [AppsSource(), MaidSource(), RunSource(),
-                        CalcSource(), WebSource()]
+        self.sources = [AppsSource()]
+        # The Maid tab drives the other tools, so it only earns its
+        # place when at least one of them is installed - the suite is
+        # independent tool by tool.
+        if any_installed():
+            self.sources.append(MaidSource())
+        self.sources += [RunSource(), CalcSource(), WebSource()]
         self.source_idx = 0
         self.theme_idx = index_of(load())
         self.rows = []

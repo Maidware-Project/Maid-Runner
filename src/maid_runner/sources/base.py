@@ -5,6 +5,21 @@ import shlex
 import shutil
 import subprocess
 
+# How each terminal takes a trailing command; unknown names get -e.
+RUN_FLAGS = {
+    "konsole": ["-e"], "alacritty": ["-e"], "kitty": ["-e"],
+    "qterminal": ["-e"], "tilix": ["-e"], "xterm": ["-e"],
+    "ghostty": ["-e"], "wezterm": ["start", "--"],
+    "gnome-terminal": ["--"], "xfce4-terminal": ["-x"],
+    "xfce-terminal": ["-x"], "foot": [], "blackbox-terminal": [],
+    "console": [],
+}
+
+# Last resort, in order. Only reached when the desktop will not say.
+FALLBACK_TERMINALS = ("ghostty", "konsole", "alacritty", "kitty", "foot",
+                      "wezterm", "qterminal", "tilix", "xfce4-terminal",
+                      "gnome-terminal", "xterm")
+
 
 def app_dirs():
     """XDG application dirs, user first (flatpak exports included)."""
@@ -24,13 +39,73 @@ def app_dirs():
     return out
 
 
+def _terminal_argv(cmd):
+    """argv prefix: the terminal command plus how it takes a command."""
+    try:
+        tokens = shlex.split(cmd)
+    except ValueError:
+        tokens = (cmd or "").split()
+    if not tokens or not shutil.which(tokens[0]):
+        return None
+    return tokens + RUN_FLAGS.get(os.path.basename(tokens[0]), ["-e"])
+
+
+def _kde_terminal():
+    """Plasma records the default terminal in kdeglobals."""
+    kr = shutil.which("kreadconfig6") or shutil.which("kreadconfig5")
+    if not kr:
+        return None
+    try:
+        out = subprocess.run(
+            [kr, "--file", "kdeglobals", "--group", "General",
+             "--key", "TerminalApplication"],
+            capture_output=True, text=True, timeout=5)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return _terminal_argv(out.stdout.strip())
+
+
+def _gnome_terminal():
+    """GNOME records it in its default-applications settings."""
+    gs = shutil.which("gsettings")
+    if not gs:
+        return None
+
+    def get(key):
+        try:
+            out = subprocess.run([gs, "get",
+                                  "org.gnome.desktop.default-applications.terminal",
+                                  key], capture_output=True, text=True, timeout=5)
+        except (OSError, subprocess.SubprocessError):
+            return ""
+        return out.stdout.strip().strip("'\"")
+
+    argv = _terminal_argv(get("exec"))
+    if argv is None:
+        return None
+    arg = get("exec-arg")
+    return argv + ([arg] if arg and arg != "-e" else [])
+
+
 def pick_terminal():
-    """First available terminal's exec argv prefix, or None."""
-    for term, flag in (("ghostty", "-e"), ("konsole", "-e"),
-                       ("xfce4-terminal", "-x"), ("gnome-terminal", "--"),
-                       ("xterm", "-e")):
-        if shutil.which(term):
-            return [term, flag]
+    """argv prefix that runs a command in this machine's default
+    terminal. Nothing here assumes a setup: ask the freedesktop helper,
+    then $TERMINAL, then the desktop (kdeglobals, gnome settings), and
+    only then fall back to known names."""
+    if shutil.which("xdg-terminal-exec"):
+        return ["xdg-terminal-exec"]
+    term = os.environ.get("TERMINAL", "").strip()
+    if term:
+        argv = _terminal_argv(term)
+        if argv:
+            return argv
+    for probe in (_kde_terminal, _gnome_terminal):
+        argv = probe()
+        if argv:
+            return argv
+    for name in FALLBACK_TERMINALS:
+        if shutil.which(name):
+            return [name] + RUN_FLAGS.get(name, ["-e"])
     return None
 
 
