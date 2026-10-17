@@ -16,12 +16,13 @@ python3 -m py_compile "$SRC"/maid_runner/*.py "$SRC"/maid_runner/sources/*.py ||
 ok "syntax"
 
 echo "== personal data =="
-# desktop Exec paths use the rewrite convention handled by install.sh
-# (same as every Maid project) - scanned everywhere except there. The
-# suite must never carry a machine's own config: no host names, no
-# desktop ids, no paths from one person's box.
-if grep -rn --exclude-dir=__pycache__ -iE "AA:BB|RemoteApp|ExampleBuds|Liberty|example-host|10\.0\.0|/home/EXAMPLEUSER/|maple mono|gtk-single-instance|com\.mitchellh|COMCAST|LeaseWeb" \
-    "$SRC" "$PKGDIR/README.md" "$PKGDIR/install.sh" "$PKGDIR/bin" "$PKGDIR/AGENTS.md" "$PKGDIR/CONTRIBUTING.md" 2>/dev/null | grep -v "s|/home/EXAMPLEUSER/|"; then
+# every shipped file is scanned, desktop Exec included: those carry a
+# @HOME@ placeholder that install.sh rewrites to this $HOME, so the repo
+# never names a machine's own paths. The suite must never carry a
+# machine's own config: no host names, no desktop ids, no paths from one
+# person's box.
+if grep -rn --exclude-dir=__pycache__ -iE "AA:BB|RemoteApp|ExampleBuds|Liberty|example-host|10\.0\.0|/(home|Users)/[^/[:space:]]+|maple mono|gtk-single-instance|com\.mitchellh|COMCAST|LeaseWeb" \
+    "$SRC" "$PKGDIR/README.md" "$PKGDIR/install.sh" "$PKGDIR/bin" "$PKGDIR/desktop" "$PKGDIR/AGENTS.md" "$PKGDIR/CONTRIBUTING.md" 2>/dev/null; then
   fail "personal string leaked"
 fi
 ok "no personal data"
