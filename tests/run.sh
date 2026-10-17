@@ -411,7 +411,7 @@ echo "== themes present =="
 n=0
 for f in "$PKGDIR"/themes/maid-*.rasi; do
   [ -f "$f" ] || continue
-  grep -q "^background" "$f" || fail "no palette block: $(basename "$f")"
+  grep -qE "^[[:space:]]*bg:" "$f" || fail "no palette block: $(basename "$f")"
   n=$((n + 1))
 done
 [ "$n" -ge 6 ] || fail "expected 6+ themes, found $n"
@@ -438,11 +438,15 @@ HOME=/tmp/mr-home bash "$PKGDIR/install.sh" </dev/null >/dev/null 2>&1 || fail "
 [ -x /tmp/mr-home/.local/bin/maid-scroll ] || fail "maid-scroll wrapper missing"
 [ -f /tmp/mr-home/.local/lib/maid-runner/maid_runner/app.py ] || fail "package missing"
 [ -f /tmp/mr-home/.local/share/applications/maid-runner.desktop ] || fail "desktop missing"
-[ -f /tmp/mr-home/.local/share/rofi/themes/maid-mallow.rasi ] || fail "theme missing"
+[ -e /tmp/mr-home/.local/share/rofi ] && fail "rofi dir should not be created"
+# --set writes the Maid Scroll state file the app reads
+HOME=/tmp/mr-home bash "$PKGDIR/install.sh" --set mallow </dev/null >/dev/null 2>&1 || fail "install --set crashed"
+[ "$(cat /tmp/mr-home/.config/maid-scroll/theme 2>/dev/null)" = "mallow" ] || fail "--set did not write maid-scroll state"
 HOME=/tmp/mr-home bash "$PKGDIR/install.sh" --uninstall --purge </dev/null >/dev/null 2>&1 || fail "fake uninstall crashed"
 [ -e /tmp/mr-home/.local/bin/maid-runner ] && fail "uninstall left files"
 [ -e /tmp/mr-home/.local/bin/maid-scroll ] && fail "uninstall left maid-scroll"
 [ -e /tmp/mr-home/.local/lib/maid-runner ] && fail "uninstall left package"
+[ -e /tmp/mr-home/.config/maid-scroll ] && fail "--purge left maid-scroll state"
 rm -rf /tmp/mr-home
 ok "install + uninstall"
 

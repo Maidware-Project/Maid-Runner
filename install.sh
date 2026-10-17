@@ -17,16 +17,18 @@ for a in "$@"; do
     --no-config) ;;
     --prefix=*) PREFIX="${a#--prefix=}" ;;
     --set=*) SET="${a#--set=}" ;;
-    *) echo "unknown option: $a (see header)" >&2; exit 2 ;;
+    --set) SET_NEXT=1 ;;
+    *) if [ "${SET_NEXT:-0}" = "1" ]; then SET="$a"; SET_NEXT=0
+       else echo "unknown option: $a (see header)" >&2; exit 2; fi ;;
   esac
 done
+[ "${SET_NEXT:-0}" = "1" ] && { echo "--set needs a name" >&2; exit 2; }
 if [ -z "$PREFIX" ]; then PREFIX="$HOME/.local"; fi
 if [ "$PREFIX" = "$HOME/.local" ]; then
   BINDIR="$HOME/.local/bin"; LIBDIR="$HOME/.local/lib"; SHAREDIR="$HOME/.local/share"; REWRITE=1
 else
   BINDIR="${DESTDIR:-}$PREFIX/bin"; LIBDIR="${DESTDIR:-}$PREFIX/lib"; SHAREDIR="${DESTDIR:-}$PREFIX/share"; REWRITE=1
 fi
-THEMEDIR="$SHAREDIR/rofi/themes"
 
 say()  { echo "==> $*"; }
 
@@ -36,7 +38,12 @@ if [ "$UNINST" = "1" ]; then
   rm -rf "$LIBDIR"/maid-runner
   rm -f "$SHAREDIR"/applications/maid-runner.desktop
   rm -f "$SHAREDIR"/rofi/themes/maid-*.rasi
-  say "uninstalled (app + entry out; Maid Scroll state left in ~/.config/maid-scroll)"
+  if [ "$PURGE" = "1" ]; then
+    rm -rf "${XDG_CONFIG_HOME:-$HOME/.config}/maid-scroll"
+    say "uninstalled (app + entry out; Maid Scroll state purged)"
+  else
+    say "uninstalled (app + entry out; Maid Scroll state left in ~/.config/maid-scroll)"
+  fi
   exit 0
 fi
 
@@ -74,32 +81,16 @@ copy_one "$PKGDIR/desktop/maid-runner.desktop" \
   "$SHAREDIR/applications/maid-runner.desktop" $REWRITE
 [ "$CHECK" = "1" ] && { say "(check only, nothing changed)"; exit 0; }
 
-# activate one theme by pointing config.rasi at it (backs config up first)
-pick=""
+# --set NAME stores a palette in the Maid Scroll state file (the same
+# one the app's caps lock and `maid-scroll set` write). No rofi, no
+# config editing - just the active palette name.
 if [ -n "$SET" ]; then
-  pick="$SET"
-elif [ -t 0 ]; then
-  echo "available: $(cd "$THEMEDIR" && ls maid-*.rasi | sed 's/^maid-//;s/\.rasi$//' | tr '\n' ' ')"
-  printf 'Point the rofi fallback at one now? [name/empty to skip]: '
-  read -r pick
-fi
-if [ -n "$pick" ]; then
-  themefile="$THEMEDIR/maid-$pick.rasi"
-  [ "$pick" = "${pick#maid-}" ] || themefile="$THEMEDIR/$pick.rasi"
-  if [ -f "$themefile" ]; then
-    conf="$HOME/.config/rofi/config.rasi"
-    if [ -f "$conf" ] && grep -q "@theme" "$conf"; then
-      cp -a "$conf" "${conf}.bak-${BACKUP_TS}"
-      # shellcheck disable=SC2086
-      sed -i -e "s|^\(\s*\)@theme.*|\1@theme \"${themefile//&/\\&}\"|" "$conf"
-      say "theme set: $pick (config backed up)"
-    else
-      say "no @theme line in $conf - set it by hand to: $themefile"
-    fi
-  else
-    say "no such theme: $pick (see list above)"
-  fi
+  STATE_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/maid-scroll"
+  [ "$CHECK" = "0" ] && mkdir -p "$STATE_DIR"
+  echo "activate: $SET"
+  [ "$CHECK" = "0" ] && printf '%s\n' "$SET" > "$STATE_DIR/theme"
+  say "maid scroll palette set: $SET (state: $STATE_DIR/theme)"
 else
-  say "no theme activated (point @theme at one file under $THEMEDIR when ready)"
+  say "no palette set (run: maid-scroll set NAME, or install.sh --set NAME)"
 fi
 say "done."
