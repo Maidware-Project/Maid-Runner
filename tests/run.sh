@@ -121,36 +121,42 @@ XDG_CONFIG_HOME=/tmp/mr-cfg PYTHONPATH="$SRC" python3 - <<'EOF' || fail "maid sc
 import contextlib, io
 from maid_runner import palettes, scroll
 
-# fresh config resolves to the default without writing anything
-assert palettes.state_path() == "/tmp/mr-cfg/maid-scroll/theme", palettes.state_path()
-assert palettes.load() == "tokyo", palettes.load()
-assert palettes.index_of("nope") == palettes.index_of("tokyo")
-assert palettes.save("nope") is False
+# keep the intentional failures off the test log, then read the buffer
+out = io.StringIO()
+err = io.StringIO()
+with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+    # fresh config resolves to the default without writing anything
+    assert palettes.state_path() == "/tmp/mr-cfg/maid-scroll/theme", palettes.state_path()
+    assert palettes.load() == "tokyo", palettes.load()
+    assert palettes.index_of("nope") == palettes.index_of("tokyo")
+    assert palettes.save("nope") is False
 
-# next walks the list and stores the pick
-assert scroll.main(["next"]) == 0
-assert palettes.load() == "mallow", palettes.load()
-assert scroll.main(["set", "green"]) == 0
-assert palettes.load() == "green"
-# unknown name and unknown command both refuse, state untouched
-assert scroll.main(["set", "nope"]) == 2
-assert palettes.load() == "green"
-assert scroll.main(["bogus"]) == 2
-assert palettes.load() == "green"
-# the last palette wraps back to the first
-assert scroll.main(["set", "blue"]) == 0
-assert scroll.main(["next"]) == 0
-assert palettes.load() == "dark", palettes.load()
+    # next walks the list and stores the pick
+    assert scroll.main(["next"]) == 0
+    assert palettes.load() == "mallow", palettes.load()
+    assert scroll.main(["set", "green"]) == 0
+    assert palettes.load() == "green"
+    # unknown name and unknown command both refuse, state untouched
+    assert scroll.main(["set", "nope"]) == 2
+    assert palettes.load() == "green"
+    assert scroll.main(["bogus"]) == 2
+    assert palettes.load() == "green"
+    # the last palette wraps back to the first
+    assert scroll.main(["set", "blue"]) == 0
+    assert scroll.main(["next"]) == 0
+    assert palettes.load() == "dark", palettes.load()
 
-# current prints just the name; list stars it
-buf = io.StringIO()
-with contextlib.redirect_stdout(buf):
+    # current prints just the name; list stars it
     assert scroll.main(["set", "tokyo"]) == 0
     assert scroll.main(["current"]) == 0
     assert scroll.main(["list"]) == 0
-out = buf.getvalue().splitlines()
-assert out[0] == "tokyo", out[:1]
-assert "* tokyo" in out and "  dark" in out, out
+
+with open(palettes.state_path(), encoding="utf-8") as f:
+    assert f.read().strip() == "tokyo", "state must be one line"
+lines = out.getvalue().splitlines()
+assert "tokyo" in lines, lines
+assert "* tokyo" in lines and "  dark" in lines, lines
+assert "no theme named 'nope'" in err.getvalue(), err.getvalue()
 print("maid scroll passed")
 EOF
 ok "maid scroll"
