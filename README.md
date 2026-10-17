@@ -1,6 +1,6 @@
 # Maid Runner - search everything from one key
 
-command-line helper (qt app with rofi fallback). small search box for kde plasma: type, hit enter. tab cycles sources - applications (from kde menu), maid (suite actions), run (path commands), calculator, web. no accounts, no daemons, no indexing service.
+command-line helper (qt app with rofi fallback). centered search card over a dimmed backdrop, rofi-style, for kde plasma: type, hit enter. tab cycles sources - applications (from kde menu), maid (suite actions), run (path commands), calculator, web. no accounts, no daemons, no indexing service.
 
 ```
 src/maid_runner/      the Qt app (window + one module per source)
@@ -31,7 +31,8 @@ your machine. to bind it on Plasma:
 
 rofi fallback users: same steps with whatever rofi command you run.
 
-type to filter, TAB to change source, enter to run, esc to close.
+type to filter, TAB to change source (shift+TAB goes back), enter to
+run, esc - or a click outside the card - closes.
 empty query on Maid lists every suite action.
 
 ## sources
