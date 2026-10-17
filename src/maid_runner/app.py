@@ -1,13 +1,13 @@
 r"""Maid Runner window: one search box, TAB cycles sources.
 
 The window is a fullscreen dim overlay with the search card centered
-inside it (the rofi look). The card is placed by layout, not by asking
-the compositor to move the toplevel: Wayland never lets an app position
-its own window, so the old move() centering silently did nothing there
-and the window landed wherever KWin wanted.
+inside it. The card is placed by layout, not by asking the compositor
+to move the toplevel: Wayland never lets an app position its own
+window, so the old move() centering silently did nothing there and the
+window landed wherever KWin wanted.
 
-Caps lock cycles the six palettes the rofi themes use, so the app and
-the fallback stay one family.
+Caps lock cycles the six Maid Scroll palettes and stores the pick; the
+window and the shipped themes stay one family.
 """
 
 import os
@@ -20,6 +20,7 @@ from PyQt6.QtWidgets import (QApplication, QDialog, QFrame,
                              QStackedWidget, QStyleFactory, QVBoxLayout,
                              QWidget)
 
+from .palettes import PALETTES, index_of, load, save
 from .sources.apps import AppsSource
 from .sources.calc import CalcSource
 from .sources.maid import MaidSource
@@ -29,25 +30,6 @@ from .sources.web import WebSource
 # Subtitle policy: "maid" (subtitles only on Maid rows), "all", "none".
 # Override locally with MAID_RUNNER_SUBTITLES; the repo default stays.
 SUBTITLE_MODE = os.environ.get("MAID_RUNNER_SUBTITLES", "maid")
-
-# The six rofi fallback palettes (themes/maid-*.rasi), same names and
-# hex values - only the colors the window needs. Caps lock cycles them;
-# the window opens on tokyo, which is what it always looked like.
-PALETTES = [
-    ("dark", {"bg": "#232629", "bg_alt": "#2a2e32", "fg": "#fcfcfc",
-              "muted": "#7a7e85", "accent": "#3daee9"}),
-    ("light", {"bg": "#fcfcfc", "bg_alt": "#eff0f1", "fg": "#232629",
-               "muted": "#7f8c8d", "accent": "#3daee9"}),
-    ("tokyo", {"bg": "#1a1b26", "bg_alt": "#24283b", "fg": "#c0caf5",
-               "muted": "#565f89", "accent": "#5cb9ae"}),
-    ("mallow", {"bg": "#121212", "bg_alt": "#1e1e1e", "fg": "#ececec",
-                "muted": "#757575", "accent": "#efa8c4"}),
-    ("green", {"bg": "#121212", "bg_alt": "#1c1c1c", "fg": "#ececec",
-               "muted": "#7a7a7a", "accent": "#1db954"}),
-    ("blue", {"bg": "#0f1419", "bg_alt": "#182028", "fg": "#e6edf3",
-              "muted": "#6e7681", "accent": "#58a6ff"}),
-]
-DEFAULT_THEME = 2  # tokyo
 
 # The card is the visible "box"; clamped down on tiny screens.
 CARD_W, CARD_H = 640, 470
@@ -92,7 +74,7 @@ class RunnerWindow(QDialog):
         self.sources = [AppsSource(), MaidSource(), RunSource(),
                         CalcSource(), WebSource()]
         self.source_idx = 0
-        self.theme_idx = DEFAULT_THEME
+        self.theme_idx = index_of(load())
         self.rows = []
 
         root = QVBoxLayout(self)
@@ -166,7 +148,7 @@ class RunnerWindow(QDialog):
 
     def mousePressEvent(self, event):  # noqa: N802
         # card widgets handle their own clicks; a press landing on the
-        # dim backdrop closes, the way rofi behaves.
+        # dim backdrop closes.
         if not self.card.geometry().contains(event.position().toPoint()):
             self.close()
         else:
@@ -188,6 +170,7 @@ class RunnerWindow(QDialog):
             self.refresh()
         elif key == Qt.Key.Key_CapsLock:
             self.theme_idx = (self.theme_idx + 1) % len(PALETTES)
+            save(PALETTES[self.theme_idx][0])
             self.apply_theme()
         elif key in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
             self.run_current()

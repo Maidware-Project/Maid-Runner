@@ -5,8 +5,8 @@
     next        advance one, store it, print it
     set NAME    store NAME, one of the six
 
-No display and no rofi involved: this is the terminal side of the
-same state the app's caps lock writes.
+No display involved: this is the terminal side of the same state the
+app's caps lock writes.
 """
 
 import sys

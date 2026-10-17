@@ -6,8 +6,8 @@ run through these before you open the pull request.
    no help? no jargon without an explanation next to it.
 2. off by default. installing never activates a theme unless asked
    (`--set` or a yes). non-interactive runs change no config.
-3. proven, not claimed. `bash tests/run.sh` green (every theme parses
-   under `rofi -dump`).
+3. proven, not claimed. `bash tests/run.sh` green (maid-scroll cli,
+   offscreen app smoke, themes parse where a display allows).
 4. docs match code. README lists exactly the shipped themes. no personal
    data anywhere.
 5. uninstall story intact. `--uninstall` removes theme files, warns about
