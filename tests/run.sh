@@ -89,6 +89,14 @@ Exec=/usr/bin/termtool
 Terminal=true
 Type=Application
 EOF
+# spec string escapes: \s is a space and \\ is a backslash; the KDE
+# menu decodes them, so a shipped Name=Brave\s must show as "Brave".
+cat > /tmp/mr-xdg/applications/escaped.desktop <<'EOF'
+[Desktop Entry]
+Name=Odd\\Name\sApp
+Exec=/usr/bin/escaped
+Type=Application
+EOF
 PYTHONPATH="$SRC" XDG_DATA_HOME=/tmp/mr-xdg XDG_DATA_DIRS=/nonexistent python3 - <<'EOF' || fail "desktop parsing"
 import sys
 sys.path.insert(0, "/tmp/nonexistent")
@@ -99,6 +107,7 @@ assert "Test App" in got, got.keys()
 assert "Hidden App" not in got
 assert got["Test App"]["terminal"] is False
 assert got["Term Tool"]["terminal"] is True
+assert "Odd\\Name App" in got, got.keys()
 from maid_runner.sources.apps import _clean_exec
 assert _clean_exec("/usr/bin/testapp --flag %F") == "/usr/bin/testapp --flag"
 print("desktop parsing passed")

@@ -1,8 +1,10 @@
-"""Applications source: the KDE menu program list, from XDG dirs.
+r"""Applications source: the KDE menu program list, from XDG dirs.
 
 Reads .desktop files directly (same data the menu shows): honors
-NoDisplay/Hidden, OnlyShowIn/NotShowIn for KDE, TryExec, and strips
-Exec field codes. TAB lands here first.
+NoDisplay/Hidden, OnlyShowIn/NotShowIn for KDE, TryExec, strips Exec
+field codes, and decodes spec string escapes, so a name shipped as
+"Brave\s" shows as "Brave" like the KDE menu does. TAB lands here
+first.
 """
 
 import configparser
@@ -10,6 +12,23 @@ import os
 import shlex
 
 from .base import app_dirs, launch, pick_terminal
+
+# Desktop spec string escapes. Anything else after a backslash stays
+# literal, the way the other implementations treat it.
+_ESCAPES = {"s": " ", "n": "\n", "t": "\t", "r": "\r", "\\": "\\"}
+
+
+def _unescape(value):
+    out, i = [], 0
+    while i < len(value):
+        c = value[i]
+        if c == "\\" and i + 1 < len(value) and value[i + 1] in _ESCAPES:
+            out.append(_ESCAPES[value[i + 1]])
+            i += 2
+        else:
+            out.append(c)
+            i += 1
+    return "".join(out)
 
 
 def _parse_desktop(path):
@@ -35,7 +54,7 @@ def _parse_desktop(path):
         return None
     if e.get("Type", "Application") != "Application":
         return None
-    name = (e.get("Name") or "").strip()
+    name = _unescape(e.get("Name") or "").strip()
     exec_line = (e.get("Exec") or "").strip()
     if not name or not exec_line:
         return None
@@ -45,10 +64,10 @@ def _parse_desktop(path):
             return None
     return {
         "name": name,
-        "generic": (e.get("GenericName") or "").strip(),
-        "comment": (e.get("Comment") or "").strip(),
-        "keywords": (e.get("Keywords") or "").strip(),
-        "icon": (e.get("Icon") or "").strip(),
+        "generic": _unescape(e.get("GenericName") or "").strip(),
+        "comment": _unescape(e.get("Comment") or "").strip(),
+        "keywords": _unescape(e.get("Keywords") or "").strip(),
+        "icon": _unescape(e.get("Icon") or "").strip(),
         "exec": exec_line,
         "terminal": e.get("Terminal", "false").lower() == "true",
     }
