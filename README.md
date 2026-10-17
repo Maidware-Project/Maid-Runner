@@ -53,7 +53,7 @@ empty query on Maid lists every suite action.
 
 ## search
 
-bare text goes to [searxng](https://github.com/searx/searxng), a free
+bare text goes to [SearXNG](https://github.com/searxng/searxng), a free
 and open source metasearch engine. it is the official search behind
 Maid Runner on purpose: no profiles, no ad tracking, results pulled
 from many engines at once, so your searches stay yours.
