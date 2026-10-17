@@ -78,6 +78,7 @@ class MaidSource:
 
     def activate(self, payload):
         from .base import launch
+        from ..suite import resolve
         argv, term = payload
-        argv = [a if "/" in a else os.path.join(BIN, a) for a in argv]
+        argv = [a if "/" in a else (resolve(a) or _b(a)) for a in argv]
         return launch(argv, terminal=term)
