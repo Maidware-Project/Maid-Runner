@@ -7,8 +7,8 @@ to humans and AI assistants alike. maintained by Maidware Project.
 ## commits
 
 - short lowercase summaries with a prefix: `fix:`, `feat:`, `docs:`,
-  `tests:`, `chore:` - e.g. `fix: stop the rofi fallback closing on an
-  empty query`
+  `tests:`, `chore:` - e.g. `fix: stop the palette cycle skipping a
+  theme`
 - sign off every commit (`git commit -s` appends it):
   `Signed-off-by: Your Name <you@example.com>` - the developer's
   certificate of origin, your word that you may contribute it

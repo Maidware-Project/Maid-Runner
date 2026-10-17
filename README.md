@@ -6,7 +6,7 @@ a launcher and search box (Qt) for kde plasma: a centered search card over a dim
 src/maid_runner/             the Qt app (window + one module per source)
 src/maid_runner/palettes.py  the six palettes (Maid Scroll source of truth)
 src/maid_runner/scroll.py    list/scroll/set the palette, no display needed
-bin/maid-runner              entry: the Qt app (rofi combi fallback otherwise)
+bin/maid-runner              entry: the Qt app
 bin/maid-scroll              terminal entry for the palettes
 themes/maid-*.rasi           the same six palettes as drun themes (fallback)
 desktop/                     launcher icon (pin it, bind a key to it)
@@ -71,16 +71,14 @@ MAID_RUNNER_SEARX=https://searxng.site maid-runner   # use another instance
 krunner is plugins-in-process and does what Plasma says. rofi is
 superb but dumb (and themed separately). Maid Runner is one focused
 search box whose best source - the Maid tab - knows *your* system:
-earbuds state, pending updates, share targets. plus: six matching
-rofi themes included for when PyQt6 isn't around.
+earbuds state, pending updates, share targets.
 
 ## themes
 
-six palettes ship in the app and as matching drun themes (only the
-palette block differs, so diffs stay readable): `dark` (breeze match),
-`light`, `tokyo` (the default), `mallow`, `green`, `blue`. the chosen
-one is one line of state under `~/.config/maid-scroll/`, written by the
-app (caps lock) and by `maid-scroll`:
+six palettes ship in the app: `dark` (breeze match), `light`, `tokyo`
+(the default), `mallow`, `green`, `blue`. the chosen one is one line of
+state under `~/.config/maid-scroll/`, written by the app (caps lock) and
+by `maid-scroll`:
 
 ```sh
 maid-scroll list         # every palette, star on the current one
@@ -88,22 +86,19 @@ maid-scroll next         # advance one, keep it
 maid-scroll set mallow   # jump straight to one
 ```
 
-the drun themes are the fallback for when PyQt6 or a display is
-missing; each uses system monospace - set your own in one line. the
-installer can point the fallback at one:
+the installer can set the active palette at install time:
 
 ```sh
-bash install.sh --set mallow      # copy + activate maid-mallow
+bash install.sh --set mallow      # store mallow as the active palette
 ```
 
 ## uninstall
 
 ```sh
-bash install.sh --uninstall            # app, themes, entry out
+bash install.sh --uninstall            # app + entry out
 ```
 
-your rofi config is untouched (re-point `@theme` yourself if it
-named a maid theme).
+your Maid Scroll state is left in `~/.config/maid-scroll/`.
 
 ## License
 

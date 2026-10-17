@@ -1,9 +1,9 @@
 # AGENTS.md - Maid Runner (for AI assistants; humans see README.md)
 
-One maintainer, a couple of friends, and a lot of rofi themes. Keep
-changes small enough to review, and ask before adding a dependency. Theme
-files are user-tweaked forks: keep the shared structure identical across
-all six, palette block aside, so diffs stay readable.
+One maintainer, a couple of friends, and six Maid Scroll palettes. Keep
+changes small enough to review, and ask before adding a dependency. The
+six themes are user-tweaked forks: keep the shared structure identical
+across all six, palette block aside, so diffs stay readable.
 
 Say what you actually did, not what you were asked to do. A UI bug hides
 well in a diff, so if you didn't launch the app or dump every theme, say
@@ -25,10 +25,11 @@ next, not for the model that suggested it.
 ## Layout
 
 - `src/maid_runner/` the Qt app (app window + per-source modules)
-- `bin/maid-runner` entry: Qt app when PyQt6 + display exist, rofi
-  combi fallback otherwise
-- `themes/maid-*.rasi` six drun themes (same layout, six palettes)
-- `desktop/` launcher, `install.sh` file copier + optional theme
+- `bin/maid-runner` entry: the Qt app (needs PyQt6 + a display)
+- `bin/maid-scroll` entry: list/set the palette, no display needed
+- `themes/maid-*.rasi` six theme mirrors (same layout, six palettes;
+  `palettes.py` is the source of truth and tests keep the hex in sync)
+- `desktop/` launcher, `install.sh` file copier + optional palette
   activation, `tests/` suite (unit + offscreen smoke + installer)
 
 ## Rules
@@ -55,15 +56,13 @@ next, not for the model that suggested it.
 ## Boundaries (do not touch)
 
 - The shared structure of the six `themes/maid-*.rasi` files.
-- The fallback contract in `bin/maid-runner`: Qt when PyQt6 + display
-  exist, rofi combi otherwise.
 - The installer contract: copies, never symlinks, backs up.
 
 ## Verify
 
 - `bash tests/run.sh` - pure-python unit tests, offscreen app smoke
-  test, rofi -dump on every theme, fake-HOME install/uninstall.
-  needs PyQt6 + rofi installed (CI has both).
+  test, theme presence + hex sync, fake-HOME install/uninstall.
+  needs PyQt6 only (CI has it).
 - `bash install.sh --check` - dry run, must write nothing.
 - Personal-data grep lives in tests/run.sh - keep it green
   (notably: no font names assuming a setup, no machine specifics).
