@@ -68,6 +68,10 @@ class RunnerWindow(QDialog):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Maid Runner")
+        # Match the installed desktop entry's Icon= so the taskbar and
+        # window list show the search glyph instead of a generic one.
+        self.setWindowIcon(QIcon.fromTheme(
+            "system-search", QIcon.fromTheme("application-x-executable")))
         self.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.FramelessWindowHint)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
 
@@ -249,6 +253,10 @@ def main():
     app = QApplication.instance() or QApplication(sys.argv)
     app.setApplicationName("Maid Runner")
     app.setOrganizationName("Maidware Project")
+    # Wayland app_id: name the desktop file so the compositor matches
+    # maid-runner.desktop (its icon, its grouping) instead of guessing
+    # from the window title.
+    app.setDesktopFileName("maid-runner")
     # Fusion renders the Maid stylesheet predictably on every desktop;
     # system style stays untouched for everything else.
     fusion = QStyleFactory.create("Fusion")
