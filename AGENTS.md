@@ -45,6 +45,19 @@ next, not for the model that suggested it.
   `feat:`, `docs:`, `tests:`, `chore:`), one logical change each.
   Sign off - the trailer is exactly `Signed-off-by: visa`, no email.
 
+## Principles
+
+Keep it simple ([KISS](https://en.wikipedia.org/wiki/KISS_principle)) and
+boring. In practice:
+
+- The smallest change that solves the problem; nothing added "for later"
+  (YAGNI).
+- One place owns each fact; no repeated logic (DRY).
+- Each tool does one thing well and composes (unix philosophy, rule of
+  least power).
+- Readable beats clever; less is more (worse is better).
+- Delete what nothing needs instead of keeping it around.
+
 ## Never
 
 - Never push. The maintainer pushes; commits stay local until asked.
