@@ -405,33 +405,17 @@ EOF
 ok "offscreen smoke"
 rm -rf /tmp/mr-xdg2
 
-echo "== themes parse =="
-# X11 rofi opens the display before handling -dump-theme, so it cannot
-# validate themes on a headless runner (or an ssh session). use xvfb-run
-# when there is no session display, and skip when neither exists.
-ROFI=""
-if command -v rofi >/dev/null 2>&1; then
-  if [ -n "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ]; then
-    ROFI=rofi
-  elif command -v xvfb-run >/dev/null 2>&1; then
-    ROFI="xvfb-run -a rofi"
-  fi
-fi
-if [ -n "$ROFI" ]; then
-  n=0
-  for f in "$PKGDIR"/themes/maid-*.rasi; do
-    # -dump-theme is the real flag, and a broken theme only warns on
-    # stderr while still exiting 0 - so read stderr.
-    errs=$($ROFI -dump-theme -theme "$f" 2>&1 >/dev/null) || fail "unparsable: $(basename "$f")"
-    case "$errs" in *"Failed to parse"*) fail "unparsable: $(basename "$f")" ;; esac
-    n=$((n + 1))
-  done
-  [ "$n" -ge 6 ] || fail "expected 6+ themes, found $n"
-  ok "all themes parse ($n)"
-else
-  echo "(no usable rofi here - theme parse skipped)"
-  ok "themes skipped"
-fi
+echo "== themes present =="
+# The six .rasi files mirror the palettes (palettes.py is the source of
+# truth, checked below) - no rofi needed to count and confirm them.
+n=0
+for f in "$PKGDIR"/themes/maid-*.rasi; do
+  [ -f "$f" ] || continue
+  grep -q "^background" "$f" || fail "no palette block: $(basename "$f")"
+  n=$((n + 1))
+done
+[ "$n" -ge 6 ] || fail "expected 6+ themes, found $n"
+ok "all themes present ($n)"
 
 echo "== structure identical =="
 body() { sed '1,9d' "$1"; }

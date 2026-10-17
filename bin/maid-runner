@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Maid Runner entry: the Qt app when PyQt6 + a display exist,
-# rofi combi otherwise. Extra args pass through to whichever runs.
+# Maid Runner entry: the Qt app. It needs PyQt6 + a display; extra args
+# pass through. Maid Scroll (the palette cycler) is bin/maid-scroll.
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 PKG="$HERE/../lib/maid-runner"
@@ -12,7 +12,11 @@ if [ -d "$PKG" ] && has_pyqt && has_display; then
   PYTHONPATH="$PKG" exec python3 -m maid_runner "$@"
 fi
 
-# fallback: rofi combi (apps, commands, windows, ssh)
-MODES="${MAID_RUNNER_MODES:-drun,run,window,ssh}"
-command -v rofi >/dev/null 2>&1 || { echo "Maid Runner needs PyQt6 or rofi." >&2; exit 2; }
-exec rofi -show combi -modes combi -combi-modes "$MODES" "$@"
+if [ ! -d "$PKG" ]; then
+  echo "Maid Runner: package missing under $PKG (reinstall with install.sh)." >&2
+elif ! has_pyqt; then
+  echo "Maid Runner needs PyQt6 (install python3-pyqt6)." >&2
+else
+  echo "Maid Runner needs a display (Wayland or X11)." >&2
+fi
+exit 2
