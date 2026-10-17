@@ -15,9 +15,9 @@ RUN_FLAGS = {
     "console": [],
 }
 
-# Last resort, in order. Only reached when the desktop will not say.
-FALLBACK_TERMINALS = ("ghostty", "konsole", "alacritty", "kitty", "foot",
-                      "wezterm", "qterminal", "tilix", "xfce4-terminal",
+# Last resort, neutral order. Only reached when the desktop will not say.
+FALLBACK_TERMINALS = ("alacritty", "foot", "ghostty", "kitty", "konsole",
+                      "qterminal", "tilix", "wezterm", "xfce4-terminal",
                       "gnome-terminal", "xterm")
 
 

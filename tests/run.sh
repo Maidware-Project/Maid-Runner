@@ -21,8 +21,9 @@ echo "== personal data =="
 # never names a machine's own paths. The suite must never carry a
 # machine's own config: no host names, no desktop ids, no paths from one
 # person's box.
-if grep -rn --exclude-dir=__pycache__ -iE "90:BF|SmartAction|soundcore|Liberty|Mothership|10\.0\.0|/(home|Users)/[^/[:space:]]+|maple mono|gtk-single-instance|com\.mitchellh|COMCAST|LeaseWeb" \
-    "$SRC" "$PKGDIR/README.md" "$PKGDIR/install.sh" "$PKGDIR/bin" "$PKGDIR/desktop" "$PKGDIR/AGENTS.md" "$PKGDIR/CONTRIBUTING.md" 2>/dev/null; then
+if grep -rn --exclude-dir=__pycache__ -iE "([0-9a-f]{2}:){5}[0-9a-f]{2}|/(home|Users)/[^/[:space:]]+|(10|192\.168|172\.(1[6-9]|2[0-9]|3[01]))\.[0-9]{1,3}\.[0-9]{1,3}" \
+    "$SRC" "$PKGDIR/README.md" "$PKGDIR/install.sh" "$PKGDIR/bin" "$PKGDIR/desktop" "$PKGDIR/AGENTS.md" "$PKGDIR/CONTRIBUTING.md" 2>/dev/null \
+    | grep -v "AA:BB:CC:DD:EE:FF"; then
   fail "personal string leaked"
 fi
 ok "no personal data"
