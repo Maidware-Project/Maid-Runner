@@ -17,6 +17,32 @@ from .base import app_dirs, launch, pick_terminal
 # literal, the way the other implementations treat it.
 _ESCAPES = {"s": " ", "n": "\n", "t": "\t", "r": "\r", "\\": "\\"}
 
+# The app-manager tabs and the freedesktop categories that feed them,
+# matching the Plasma menu's top level (plasma-applications.menu), in
+# its order. An app lands in a tab when its Categories= names any of
+# the tab's tokens, so an app can honestly sit in more than one.
+CATEGORY_TOKENS = (
+    ("Internet", ("Network",)),
+    ("Games", ("Game",)),
+    ("Multimedia", ("AudioVideo",)),
+    ("Graphics", ("Graphics",)),
+    ("Office", ("Office",)),
+    ("Utilities", ("Utility", "TextEditor", "Accessibility")),
+    ("Development", ("Development", "Translation", "WebDevelopment")),
+    ("System", ("System", "Settings")),
+    ("Help", ("Documentation",)),
+)
+
+
+def categories_present(apps):
+    """Tab names that have at least one app on this machine, in order."""
+    out = []
+    for name, tokens in CATEGORY_TOKENS:
+        wanted = set(tokens)
+        if any(wanted & app["buckets"] for app in apps):
+            out.append(name)
+    return out
+
 
 def _unescape(value):
     out, i = [], 0
@@ -62,6 +88,7 @@ def _parse_desktop(path):
         import shutil
         if shutil.which(e["TryExec"].strip()) is None:
             return None
+    tokens = {t.strip() for t in (e.get("Categories") or "").split(";") if t.strip()}
     return {
         "name": name,
         "generic": _unescape(e.get("GenericName") or "").strip(),
@@ -70,6 +97,8 @@ def _parse_desktop(path):
         "icon": _unescape(e.get("Icon") or "").strip(),
         "exec": exec_line,
         "terminal": e.get("Terminal", "false").lower() == "true",
+        "buckets": frozenset(name for name, cats in CATEGORY_TOKENS
+                             if tokens & set(cats)),
     }
 
 
@@ -132,16 +161,24 @@ class AppsSource:
     name = "Applications"
     show_subtitles = False
 
-    def __init__(self, dirs=None):
-        self._apps = load_apps(dirs)
+    def __init__(self, apps=None, category=None, dirs=None):
+        self._apps = load_apps(dirs) if apps is None else apps
+        self._category = category
+        if category:
+            self.name = category
+
+    def _pool(self):
+        if not self._category:
+            return self._apps
+        return [a for a in self._apps if self._category in a["buckets"]]
 
     def items(self, query):
         q = (query or "").strip()
         if not q:
             return [(a["name"], a["generic"] or a["comment"], a["icon"], a)
-                    for a in sorted(self._apps, key=lambda a: a["name"].lower())]
+                    for a in sorted(self._pool(), key=lambda a: a["name"].lower())]
         scored = []
-        for a in self._apps:
+        for a in self._pool():
             r = _rank(q, a)
             if r is not None:
                 scored.append((r, a["name"].lower(), a))

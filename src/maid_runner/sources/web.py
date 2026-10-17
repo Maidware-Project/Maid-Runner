@@ -5,8 +5,7 @@ company's results. Opens in the default browser, never in the runner."""
 import os
 from urllib.parse import quote_plus, urlparse
 
-from PyQt6.QtCore import QUrl
-from PyQt6.QtGui import QDesktopServices
+from .base import open_external
 
 # SearXNG instances, best first (the public searx.space ranking). It is
 # open source, so any instance may come and go - point MAID_RUNNER_SEARX
@@ -91,5 +90,4 @@ class WebSource:
     def activate(self, url):
         if "://" not in url:
             url = "https://" + url
-        QDesktopServices.openUrl(QUrl(url))
-        return True
+        return open_external(url)

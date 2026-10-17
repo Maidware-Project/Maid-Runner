@@ -125,3 +125,19 @@ def launch(argv, terminal=False):
         return True
     except (OSError, ValueError):
         return False
+
+
+def open_external(target):
+    """Open a URL or a local file with the user's default handler.
+
+    QDesktopServices routes through the desktop portal; when that is
+    missing the freedesktop xdg-open still is not. Returns True when a
+    handler was handed the target.
+    """
+    from PyQt6.QtCore import QUrl
+    from PyQt6.QtGui import QDesktopServices
+    is_file = os.path.exists(target)
+    url = QUrl.fromLocalFile(target) if is_file else QUrl(target)
+    if QDesktopServices.openUrl(url):
+        return True
+    return launch(["xdg-open", os.path.abspath(target) if is_file else target])
