@@ -27,7 +27,7 @@ if [ -z "$PREFIX" ]; then PREFIX="$HOME/.local"; fi
 if [ "$PREFIX" = "$HOME/.local" ]; then
   BINDIR="$HOME/.local/bin"; LIBDIR="$HOME/.local/lib"; SHAREDIR="$HOME/.local/share"; REWRITE=1
 else
-  BINDIR="${DESTDIR:-}$PREFIX/bin"; LIBDIR="${DESTDIR:-}$PREFIX/lib"; SHAREDIR="${DESTDIR:-}$PREFIX/share"; REWRITE=1
+  BINDIR="${DESTDIR:-}$PREFIX/bin"; LIBDIR="${DESTDIR:-}$PREFIX/lib"; SHAREDIR="${DESTDIR:-}$PREFIX/share"; REWRITE=2
 fi
 
 say()  { echo "==> $*"; }
@@ -56,6 +56,9 @@ copy_one() {
   if [ "$rewrite" = "1" ]; then
     # escape & (sed replacement metachar) in $HOME
     sed -e "s|@HOME@|${HOME//&/\\&}|g" "$src" > "$tmp"
+  elif [ "$rewrite" = "2" ]; then
+    # system package: bare command names, resolved via PATH
+    sed -e "s|@HOME@||g" -e "s|/.local/bin/||g" "$src" > "$tmp"
   else
     cp -a "$src" "$tmp"
   fi
