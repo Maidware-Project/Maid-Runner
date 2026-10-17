@@ -49,7 +49,22 @@ empty query on Maid lists every suite action.
 - **Calculator** - safe arithmetic only (AST allowlist, never eval);
   enter copies the result.
 - **Web** - `yt query`, `wiki query`, `gh query`, `g/ddg query`,
-  bare URLs open directly, anything else asks DuckDuckGo.
+  bare URLs open directly, anything else asks SearXNG.
+
+## search
+
+bare text goes to [searxng](https://github.com/searx/searxng), a free
+and open source metasearch engine. it is the official search behind
+Maid Runner on purpose: no profiles, no ad tracking, results pulled
+from many engines at once, so your searches stay yours.
+
+the default instance is `search.jeremyh.xyz`. it is open source, so
+any public instance works - point the runner at another one with
+`MAID_RUNNER_SEARX`:
+
+```sh
+MAID_RUNNER_SEARX=https://searxng.site maid-runner   # use another instance
+```
 
 ## why not krunner / rofi / albert?
 
