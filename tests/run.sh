@@ -119,7 +119,7 @@ echo "== offscreen smoke =="
 rm -rf /tmp/mr-xdg2 && mkdir -p /tmp/mr-xdg2/applications
 printf '[Desktop Entry]\nName=Smoke App\nExec=/usr/bin/smoke\nType=Application\n' > /tmp/mr-xdg2/applications/smoke.desktop
 QT_QPA_PLATFORM=offscreen XDG_DATA_HOME=/tmp/mr-xdg2 XDG_DATA_DIRS=/nonexistent PYTHONPATH="$SRC" python3 - <<'EOF' || fail "offscreen smoke"
-from maid_runner.app import RunnerWindow
+from maid_runner.app import PALETTES, RunnerWindow
 from PyQt6.QtWidgets import QApplication, QLabel
 import sys
 app = QApplication.instance() or QApplication(sys.argv)
@@ -175,6 +175,14 @@ assert w.source_idx == (i0 + 1) % len(w.sources), "TAB must reach the next sourc
 QTest.keyClick(w.search, Qt.Key.Key_Tab, Qt.KeyboardModifier.ShiftModifier)
 app.processEvents()
 assert w.source_idx == i0, "shift+TAB must go back"
+# caps lock cycles the six rofi palettes and wraps back around
+assert PALETTES[w.theme_idx][0] == "tokyo", "window opens on the tokyo palette"
+t0 = w.theme_idx
+for _ in range(len(PALETTES)):
+    QTest.keyClick(w.search, Qt.Key.Key_CapsLock)
+    app.processEvents()
+assert w.theme_idx == t0, "caps lock must wrap through every palette"
+assert PALETTES[t0][1]["bg"] in w.styleSheet(), "tokyo palette must be back on the card"
 w.resize(1280, 800)
 app.processEvents()
 c, r = w.card.geometry(), w.rect()
