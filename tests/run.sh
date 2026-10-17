@@ -433,16 +433,19 @@ HOME=/tmp/mr-home bash "$PKGDIR/install.sh" --check >/dev/null 2>&1 || fail "ins
 ok "installer dry run clean"
 
 echo "== install + uninstall =="
-HOME=/tmp/mr-home bash "$PKGDIR/install.sh" </dev/null >/dev/null 2>&1 || fail "fake install crashed"
+# pin XDG_CONFIG_HOME too: the installer honours it for the Maid Scroll
+# state, so inheriting a real one would write outside the fake HOME.
+IRUN="env HOME=/tmp/mr-home XDG_CONFIG_HOME=/tmp/mr-home/.config"
+$IRUN bash "$PKGDIR/install.sh" </dev/null >/dev/null 2>&1 || fail "fake install crashed"
 [ -x /tmp/mr-home/.local/bin/maid-runner ] || fail "wrapper missing"
 [ -x /tmp/mr-home/.local/bin/maid-scroll ] || fail "maid-scroll wrapper missing"
 [ -f /tmp/mr-home/.local/lib/maid-runner/maid_runner/app.py ] || fail "package missing"
 [ -f /tmp/mr-home/.local/share/applications/maid-runner.desktop ] || fail "desktop missing"
 [ -e /tmp/mr-home/.local/share/rofi ] && fail "rofi dir should not be created"
 # --set writes the Maid Scroll state file the app reads
-HOME=/tmp/mr-home bash "$PKGDIR/install.sh" --set mallow </dev/null >/dev/null 2>&1 || fail "install --set crashed"
+$IRUN bash "$PKGDIR/install.sh" --set mallow </dev/null >/dev/null 2>&1 || fail "install --set crashed"
 [ "$(cat /tmp/mr-home/.config/maid-scroll/theme 2>/dev/null)" = "mallow" ] || fail "--set did not write maid-scroll state"
-HOME=/tmp/mr-home bash "$PKGDIR/install.sh" --uninstall --purge </dev/null >/dev/null 2>&1 || fail "fake uninstall crashed"
+$IRUN bash "$PKGDIR/install.sh" --uninstall --purge </dev/null >/dev/null 2>&1 || fail "fake uninstall crashed"
 [ -e /tmp/mr-home/.local/bin/maid-runner ] && fail "uninstall left files"
 [ -e /tmp/mr-home/.local/bin/maid-scroll ] && fail "uninstall left maid-scroll"
 [ -e /tmp/mr-home/.local/lib/maid-runner ] && fail "uninstall left package"
