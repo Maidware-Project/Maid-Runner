@@ -1,7 +1,7 @@
 [Desktop Entry]
 Name=Maid Runner
 Comment=Search apps, commands, windows and ssh hosts from one key
-Exec=/home/visa/.local/bin/maid-runner
+Exec=@HOME@/.local/bin/maid-runner
 Icon=system-search
 Terminal=false
 Type=Application

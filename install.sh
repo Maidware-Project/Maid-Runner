@@ -55,7 +55,7 @@ copy_one() {
   trap 'rm -f "$tmp"' RETURN
   if [ "$rewrite" = "1" ]; then
     # escape & (sed replacement metachar) in $HOME
-    sed -e "s|/home/visa|${HOME//&/\\&}|g" "$src" > "$tmp"
+    sed -e "s|@HOME@|${HOME//&/\\&}|g" "$src" > "$tmp"
   else
     cp -a "$src" "$tmp"
   fi
