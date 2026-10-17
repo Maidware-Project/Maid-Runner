@@ -10,8 +10,8 @@ ok()   { PASS=$((PASS+1)); echo "ok $PASS - $1"; }
 fail() { echo "NOT OK - $1"; exit 1; }
 
 echo "== syntax =="
-bash -n "$PKGDIR"/bin/maid-runner "$PKGDIR"/install.sh || fail "bash -n"
-command -v shellcheck >/dev/null 2>&1 && shellcheck -S error "$PKGDIR"/bin/maid-runner "$PKGDIR"/install.sh || true
+bash -n "$PKGDIR"/bin/maid-runner "$PKGDIR"/bin/maid-scroll "$PKGDIR"/install.sh || fail "bash -n"
+command -v shellcheck >/dev/null 2>&1 && shellcheck -S error "$PKGDIR"/bin/maid-runner "$PKGDIR"/bin/maid-scroll "$PKGDIR"/install.sh || true
 python3 -m py_compile "$SRC"/maid_runner/*.py "$SRC"/maid_runner/sources/*.py || fail "py_compile"
 ok "syntax"
 
@@ -115,11 +115,75 @@ EOF
 ok "desktop parsing"
 rm -rf /tmp/mr-xdg
 
+echo "== maid scroll =="
+rm -rf /tmp/mr-cfg
+XDG_CONFIG_HOME=/tmp/mr-cfg PYTHONPATH="$SRC" python3 - <<'EOF' || fail "maid scroll"
+import contextlib, io
+from maid_runner import palettes, scroll
+
+# fresh config resolves to the default without writing anything
+assert palettes.state_path() == "/tmp/mr-cfg/maid-scroll/theme", palettes.state_path()
+assert palettes.load() == "tokyo", palettes.load()
+assert palettes.index_of("nope") == palettes.index_of("tokyo")
+assert palettes.save("nope") is False
+
+# next walks the list and stores the pick
+assert scroll.main(["next"]) == 0
+assert palettes.load() == "mallow", palettes.load()
+assert scroll.main(["set", "green"]) == 0
+assert palettes.load() == "green"
+# unknown name and unknown command both refuse, state untouched
+assert scroll.main(["set", "nope"]) == 2
+assert palettes.load() == "green"
+assert scroll.main(["bogus"]) == 2
+assert palettes.load() == "green"
+# the last palette wraps back to the first
+assert scroll.main(["set", "blue"]) == 0
+assert scroll.main(["next"]) == 0
+assert palettes.load() == "dark", palettes.load()
+
+# current prints just the name; list stars it
+buf = io.StringIO()
+with contextlib.redirect_stdout(buf):
+    assert scroll.main(["set", "tokyo"]) == 0
+    assert scroll.main(["current"]) == 0
+    assert scroll.main(["list"]) == 0
+out = buf.getvalue().splitlines()
+assert out[0] == "tokyo", out[:1]
+assert "* tokyo" in out and "  dark" in out, out
+print("maid scroll passed")
+EOF
+ok "maid scroll"
+rm -rf /tmp/mr-cfg
+
+echo "== palettes match themes =="
+PKGDIR="$PKGDIR" PYTHONPATH="$SRC" python3 - <<'EOF' || fail "palette/theme hex sync"
+import os, sys
+from maid_runner.palettes import PALETTES
+root = os.environ["PKGDIR"]
+bad = []
+for name, p in PALETTES:
+    path = os.path.join(root, "themes", "maid-%s.rasi" % name)
+    if not os.path.isfile(path):
+        bad.append("missing %s" % path)
+        continue
+    text = open(path, encoding="utf-8").read().lower()
+    for key, hexv in p.items():
+        if hexv.lower() not in text:
+            bad.append("%s: %s %s not in theme" % (name, key, hexv))
+if bad:
+    print("\n".join(bad))
+    sys.exit(1)
+print("palettes match themes")
+EOF
+ok "palettes match themes"
+
 echo "== offscreen smoke =="
-rm -rf /tmp/mr-xdg2 && mkdir -p /tmp/mr-xdg2/applications
+rm -rf /tmp/mr-xdg2 /tmp/mr-cfg2 && mkdir -p /tmp/mr-xdg2/applications
 printf '[Desktop Entry]\nName=Smoke App\nExec=/usr/bin/smoke\nType=Application\n' > /tmp/mr-xdg2/applications/smoke.desktop
-QT_QPA_PLATFORM=offscreen XDG_DATA_HOME=/tmp/mr-xdg2 XDG_DATA_DIRS=/nonexistent PYTHONPATH="$SRC" python3 - <<'EOF' || fail "offscreen smoke"
+QT_QPA_PLATFORM=offscreen XDG_CONFIG_HOME=/tmp/mr-cfg2 XDG_DATA_HOME=/tmp/mr-xdg2 XDG_DATA_DIRS=/nonexistent PYTHONPATH="$SRC" python3 - <<'EOF' || fail "offscreen smoke"
 from maid_runner.app import PALETTES, RunnerWindow
+from maid_runner import palettes
 from PyQt6.QtWidgets import QApplication, QLabel
 import sys
 app = QApplication.instance() or QApplication(sys.argv)
@@ -175,7 +239,9 @@ assert w.source_idx == (i0 + 1) % len(w.sources), "TAB must reach the next sourc
 QTest.keyClick(w.search, Qt.Key.Key_Tab, Qt.KeyboardModifier.ShiftModifier)
 app.processEvents()
 assert w.source_idx == i0, "shift+TAB must go back"
-# caps lock cycles the six rofi palettes and wraps back around
+# caps lock cycles the six palettes, wraps back around, and stores the
+# pick for the next launch (and for maid-scroll)
+assert palettes.load() == "tokyo", "a fresh config opens on tokyo"
 assert PALETTES[w.theme_idx][0] == "tokyo", "window opens on the tokyo palette"
 t0 = w.theme_idx
 for _ in range(len(PALETTES)):
@@ -183,6 +249,12 @@ for _ in range(len(PALETTES)):
     app.processEvents()
 assert w.theme_idx == t0, "caps lock must wrap through every palette"
 assert PALETTES[t0][1]["bg"] in w.styleSheet(), "tokyo palette must be back on the card"
+assert palettes.load() == PALETTES[t0][0], "caps lock must store the pick"
+# a stored pick is what the next window opens on
+palettes.save("mallow")
+w2 = RunnerWindow()
+assert PALETTES[w2.theme_idx][0] == "mallow", "window must open on the stored theme"
+palettes.save("tokyo")
 w.resize(1280, 800)
 app.processEvents()
 c, r = w.card.geometry(), w.rect()
@@ -250,16 +322,18 @@ ok "installer dry run clean"
 echo "== install + uninstall =="
 HOME=/tmp/mr-home bash "$PKGDIR/install.sh" </dev/null >/dev/null 2>&1 || fail "fake install crashed"
 [ -x /tmp/mr-home/.local/bin/maid-runner ] || fail "wrapper missing"
+[ -x /tmp/mr-home/.local/bin/maid-scroll ] || fail "maid-scroll wrapper missing"
 [ -f /tmp/mr-home/.local/lib/maid-runner/maid_runner/app.py ] || fail "package missing"
 [ -f /tmp/mr-home/.local/share/applications/maid-runner.desktop ] || fail "desktop missing"
 [ -f /tmp/mr-home/.local/share/rofi/themes/maid-mallow.rasi ] || fail "theme missing"
 HOME=/tmp/mr-home bash "$PKGDIR/install.sh" --uninstall --purge </dev/null >/dev/null 2>&1 || fail "fake uninstall crashed"
 [ -e /tmp/mr-home/.local/bin/maid-runner ] && fail "uninstall left files"
+[ -e /tmp/mr-home/.local/bin/maid-scroll ] && fail "uninstall left maid-scroll"
 [ -e /tmp/mr-home/.local/lib/maid-runner ] && fail "uninstall left package"
 rm -rf /tmp/mr-home
 ok "install + uninstall"
 
 echo "== cleanup =="
-rm -rf /tmp/mr-home /tmp/mr-xdg /tmp/mr-xdg2
+rm -rf /tmp/mr-home /tmp/mr-xdg /tmp/mr-xdg2 /tmp/mr-cfg /tmp/mr-cfg2
 ok "cleanup"
 echo "ALL $PASS PASSED"

@@ -1,9 +1,9 @@
 """Maid Scroll: the suite's own theme backend.
 
 The six palettes live here as the source of truth for the app. The
-rofi themes in themes/maid-*.rasi mirror them, and tests/run.sh checks
-the hex values stay identical. The chosen name is one line of state
-under ~/.config/maid-scroll/, read and written by the app and by
+shipped themes in themes/maid-*.rasi mirror them, and tests/run.sh
+checks the hex values stay identical. The chosen name is one line of
+state under ~/.config/maid-scroll/, read and written by the app and by
 bin/maid-scroll.
 """
 

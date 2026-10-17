@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# Maid Runner installer: Qt search app + six rofi drun themes.
+# Maid Runner installer: Qt search app + six Maid Scroll palettes.
 # Copies files (no symlinks). Usage: ./install.sh [--check]
 #   [--set NAME] [--uninstall [--purge]] [--prefix=DIR]
-# --set picks the active rofi theme (else asks on a tty, skips otherwise).
+# --set activates NAME for the rofi fallback (else asks on a tty,
+# skips otherwise).
 # --prefix installs elsewhere (packaging).
 set -u
 PKGDIR="$(cd "$(dirname "$0")" && pwd)"
@@ -32,6 +33,7 @@ say()  { echo "==> $*"; }
 if [ "$UNINST" = "1" ]; then
   rm -f "$THEMEDIR"/maid-*.rasi
   rm -f "$BINDIR"/maid-runner
+  rm -f "$BINDIR"/maid-scroll
   rm -rf "$LIBDIR"/maid-runner
   rm -f "$SHAREDIR"/applications/maid-runner.desktop
   say "uninstalled (app, themes, entry out; your rofi config untouched - re-point @theme if it named a maid theme)"
@@ -64,6 +66,8 @@ for f in "$PKGDIR"/themes/maid-*.rasi; do
 done
 copy_one "$PKGDIR/bin/maid-runner" "$BINDIR/maid-runner"
 [ "$CHECK" = "0" ] && chmod +x "$BINDIR"/maid-runner 2>/dev/null || true
+copy_one "$PKGDIR/bin/maid-scroll" "$BINDIR/maid-scroll"
+[ "$CHECK" = "0" ] && chmod +x "$BINDIR"/maid-scroll 2>/dev/null || true
 # app package (Qt sources); the wrapper resolves it via ../lib
 [ "$CHECK" = "1" ] || mkdir -p "$LIBDIR/maid-runner"
 cd "$PKGDIR/src" || { say "missing src tree: $PKGDIR/src"; exit 1; }
@@ -80,7 +84,7 @@ if [ -n "$SET" ]; then
   pick="$SET"
 elif [ -t 0 ]; then
   echo "available: $(cd "$THEMEDIR" && ls maid-*.rasi | sed 's/^maid-//;s/\.rasi$//' | tr '\n' ' ')"
-  printf 'Set one as your rofi theme now? [name/empty to skip]: '
+  printf 'Point the rofi fallback at one now? [name/empty to skip]: '
   read -r pick
 fi
 if [ -n "$pick" ]; then
