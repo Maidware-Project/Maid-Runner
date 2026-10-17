@@ -25,11 +25,22 @@ TOOLS = {
 }
 
 
+def resolve(command):
+    """Full path to a suite command, or None when it is not installed.
+
+    The bin dir first (where our installers put things), then PATH, so a
+    system-wide install counts too - and activate() runs exactly what
+    this found.
+    """
+    path = os.path.join(BIN, command)
+    if os.path.exists(path):
+        return path
+    return shutil.which(command)
+
+
 def installed(tool):
     """True when the tool's command is in our bin dir or on PATH."""
-    binary = TOOLS[tool]
-    return (os.path.exists(os.path.join(BIN, binary))
-            or shutil.which(binary) is not None)
+    return resolve(TOOLS[tool]) is not None
 
 
 def installed_tools():

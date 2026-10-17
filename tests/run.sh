@@ -213,8 +213,10 @@ rm -rf /tmp/mr-one && mkdir -p /tmp/mr-one
 printf '#!/bin/sh\nexit 0\n' > /tmp/mr-one/maidshare
 chmod +x /tmp/mr-one/maidshare
 MAID_RUNNER_BIN=/tmp/mr-one PYTHONPATH="$SRC" python3 - <<'EOF' || fail "suite partial"
+import os
 from maid_runner import suite
 from maid_runner.sources.maid import MaidSource
+os.environ["PATH"] = "/tmp/mr-one"  # nothing else on PATH
 assert suite.installed_tools() == ["Maidshare"], suite.installed_tools()
 rows = MaidSource().items("")
 assert len(rows) == 2 and all("Maidshare" in s for _, s, _, _ in rows), rows
@@ -224,8 +226,10 @@ EOF
 # nothing installed: the Maid tab offers nothing at all
 rm -rf /tmp/mr-none && mkdir -p /tmp/mr-none
 MAID_RUNNER_BIN=/tmp/mr-none PYTHONPATH="$SRC" python3 - <<'EOF' || fail "suite empty"
+import os
 from maid_runner import suite
 from maid_runner.sources.maid import MaidSource
+os.environ["PATH"] = "/tmp/mr-none"  # nothing else on PATH
 assert suite.installed_tools() == [], suite.installed_tools()
 assert not suite.any_installed()
 assert MaidSource().items("") == []
