@@ -1,8 +1,28 @@
 """Web source: URLs open directly, prefixes search, bare text asks
-DuckDuckGo. Opens in the default browser, never in the runner."""
+SearXNG - a free and open source metasearch engine - instead of one
+company's results. Opens in the default browser, never in the runner."""
+
+import os
+from urllib.parse import quote_plus, urlparse
 
 from PyQt6.QtCore import QUrl
 from PyQt6.QtGui import QDesktopServices
+
+# SearXNG instances, best first (the public searx.space ranking). It is
+# open source, so any instance may come and go - point MAID_RUNNER_SEARX
+# at another host from this list to switch.
+SEARX = [
+    "https://search.jeremyh.xyz",
+    "https://searxng.site",
+    "https://searx.tiekoetter.com",
+    "https://searx.linxx.net",
+    "https://search.ctq.ro",
+    "https://priv.au",
+    "https://www.isci.si",
+    "https://search.femboy.ad",
+    "https://searx.ononoki.org",
+    "https://search.yuri.llc",
+]
 
 SHORTCUTS = {
     "g": ("Google", "https://www.google.com/search?q={}"),
@@ -16,8 +36,20 @@ SHORTCUTS = {
 }
 
 
+def searx_base():
+    """The instance bare text searches on; the first one unless told."""
+    return (os.environ.get("MAID_RUNNER_SEARX") or SEARX[0]).rstrip("/")
+
+
+def searx_url(query):
+    return f"{searx_base()}/search?q={quote_plus(query)}"
+
+
+def _host():
+    return urlparse(searx_base()).netloc
+
+
 def _quote(s):
-    from urllib.parse import quote_plus
     return quote_plus(s)
 
 
@@ -53,8 +85,7 @@ class WebSource:
             url = q if "://" in q else "https://" + q
             return [(q, "open URL", "internet-web-browser", url)]
         if len(q) > 1:
-            label, tmpl = SHORTCUTS["ddg"]
-            return [(q, f"search {label}", "internet-web-browser", tmpl.format(_quote(q)))]
+            return [(q, f"search searx · {_host()}", "internet-web-browser", searx_url(q))]
         return []
 
     def activate(self, url):

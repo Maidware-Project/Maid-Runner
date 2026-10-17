@@ -17,15 +17,27 @@ ok "syntax"
 
 echo "== personal data =="
 # desktop Exec paths use the rewrite convention handled by install.sh
-# (same as every Maid project) - scanned everywhere except there.
-if grep -rn --exclude-dir=__pycache__ -iE "AA:BB|RemoteApp|ExampleBuds|Liberty|example-host|10\.0\.0|/home/EXAMPLEUSER/|maple mono" \
-    "$SRC" "$PKGDIR/README.md" "$PKGDIR/install.sh" "$PKGDIR/bin" 2>/dev/null | grep -v "s|/home/EXAMPLEUSER/|"; then
+# (same as every Maid project) - scanned everywhere except there. The
+# suite must never carry a machine's own config: no host names, no
+# desktop ids, no paths from one person's box.
+if grep -rn --exclude-dir=__pycache__ -iE "AA:BB|RemoteApp|ExampleBuds|Liberty|example-host|10\.0\.0|/home/EXAMPLEUSER/|maple mono|gtk-single-instance|com\.mitchellh|COMCAST|LeaseWeb" \
+    "$SRC" "$PKGDIR/README.md" "$PKGDIR/install.sh" "$PKGDIR/bin" "$PKGDIR/AGENTS.md" "$PKGDIR/CONTRIBUTING.md" 2>/dev/null | grep -v "s|/home/EXAMPLEUSER/|"; then
   fail "personal string leaked"
 fi
 ok "no personal data"
 
+# A fake suite: the runner's Maid tab only lists actions for tools that
+# are installed, so the sources tests point MAID_RUNNER_BIN at a fixture
+# instead of whatever is really on the machine.
+rm -rf /tmp/mr-bin && mkdir -p /tmp/mr-bin
+for t in bluetooth-toggle.sh update-all.sh maidshare maid-helper; do
+  printf '#!/bin/sh\nexit 0\n' > "/tmp/mr-bin/$t"
+  chmod +x "/tmp/mr-bin/$t"
+done
+ok "suite fixture"
+
 echo "== unit: scoring, calc, web, maid =="
-PYTHONPATH="$SRC" python3 - <<'EOF' || fail "unit checks"
+MAID_RUNNER_BIN=/tmp/mr-bin PYTHONPATH="$SRC" python3 - <<'EOF' || fail "unit checks"
 from maid_runner.sources.apps import _rank as rank, _parse_desktop as parse
 from maid_runner.sources.calc import looks_like_math as ismath, compute
 from maid_runner.sources.web import WebSource
@@ -51,6 +63,17 @@ rows = dict((t, u) for t, s, _, u in w.items("yt cats"))
 assert "youtube.com" in rows["cats"]
 assert w.items("example.com")[0][3] == "https://example.com"
 assert w.items("x") == []
+# bare text asks SearXNG, an open source metasearch engine, not a single
+# company; the instance is swappable without touching code
+import os
+from maid_runner.sources.web import SEARX, searx_base
+assert searx_base() == SEARX[0], searx_base()
+plain = w.items("cats and dogs")
+assert plain and plain[0][3].startswith(searx_base() + "/search?q="), plain
+assert "searx" in plain[0][1].lower(), plain[0][1]
+os.environ["MAID_RUNNER_SEARX"] = "https://searxng.site/"
+assert w.items("cats and dogs")[0][3].startswith("https://searxng.site/search?q=")
+del os.environ["MAID_RUNNER_SEARX"]
 
 m = MaidSource()
 allrows = m.items("")
@@ -114,6 +137,102 @@ print("desktop parsing passed")
 EOF
 ok "desktop parsing"
 rm -rf /tmp/mr-xdg
+
+echo "== terminal picker =="
+# Hermetic: point PATH at a scratch dir so nothing from this machine's
+# real setup decides the answer.
+PYTHONPATH="$SRC" python3 - <<'EOF' || fail "terminal picker"
+import os
+from maid_runner.sources import base
+
+D = "/tmp/mr-term"
+orig_path, orig_term = os.environ.get("PATH"), os.environ.get("TERMINAL")
+
+
+def _reset(bins):
+    os.system("rm -rf " + D)
+    os.makedirs(D)
+    for name, body in bins:
+        p = os.path.join(D, name)
+        with open(p, "w") as f:
+            f.write(body)
+        os.chmod(p, 0o755)
+
+
+def pick(bins, term=None, kde=None):
+    _reset(bins)
+    if kde:
+        _reset(bins + [("kreadconfig6",
+                        '#!/bin/sh\necho "/tmp/mr-term/myterm --single"\n')])
+    os.environ["PATH"] = D
+    os.environ.pop("TERMINAL", None)
+    if term:
+        os.environ["TERMINAL"] = term
+    try:
+        return base.pick_terminal()
+    finally:
+        os.environ["PATH"] = orig_path
+        if orig_term is None:
+            os.environ.pop("TERMINAL", None)
+        else:
+            os.environ["TERMINAL"] = orig_term
+
+
+SH = "#!/bin/sh\nexit 0\n"
+# unknown names default to -e, in list order
+assert pick([("konsole", SH)]) == ["konsole", "-e"]
+assert pick([("konsole", SH), ("ghostty", SH)]) == ["ghostty", "-e"]
+assert pick([("foot", SH)]) == ["foot"], "foot takes no flag"
+# the freedesktop helper beats guessing
+assert pick([("konsole", SH), ("xdg-terminal-exec", SH)]) == ["xdg-terminal-exec"]
+# $TERMINAL is honoured
+assert pick([("konsole", SH)], term="konsole") == ["konsole", "-e"]
+# whatever the desktop configured wins over the fallback list, flags and all
+assert pick([("konsole", SH), ("myterm", SH)], kde=True) == [
+    "/tmp/mr-term/myterm", "--single", "-e"]
+# no terminal at all -> None, and launch() reports the failure
+assert pick([]) is None
+os.system("rm -rf " + D)
+print("terminal picker passed")
+EOF
+ok "terminal picker"
+
+echo "== suite checker =="
+# full fixture: every action shows
+MAID_RUNNER_BIN=/tmp/mr-bin PYTHONPATH="$SRC" python3 - <<'EOF' || fail "suite full"
+from maid_runner import suite
+from maid_runner.sources.maid import ACTIONS, MaidSource
+assert sorted(suite.installed_tools()) == sorted(suite.TOOLS), \
+    suite.installed_tools()
+assert suite.any_installed()
+assert len(MaidSource().items("")) == len(ACTIONS)
+print("suite full passed")
+EOF
+# one tool installed: only its rows show
+rm -rf /tmp/mr-one && mkdir -p /tmp/mr-one
+printf '#!/bin/sh\nexit 0\n' > /tmp/mr-one/maidshare
+chmod +x /tmp/mr-one/maidshare
+MAID_RUNNER_BIN=/tmp/mr-one PYTHONPATH="$SRC" python3 - <<'EOF' || fail "suite partial"
+from maid_runner import suite
+from maid_runner.sources.maid import MaidSource
+assert suite.installed_tools() == ["Maidshare"], suite.installed_tools()
+rows = MaidSource().items("")
+assert len(rows) == 2 and all("Maidshare" in s for _, s, _, _ in rows), rows
+assert MaidSource().items("update") == [], "missing tool must not show"
+print("suite partial passed")
+EOF
+# nothing installed: the Maid tab offers nothing at all
+rm -rf /tmp/mr-none && mkdir -p /tmp/mr-none
+MAID_RUNNER_BIN=/tmp/mr-none PYTHONPATH="$SRC" python3 - <<'EOF' || fail "suite empty"
+from maid_runner import suite
+from maid_runner.sources.maid import MaidSource
+assert suite.installed_tools() == [], suite.installed_tools()
+assert not suite.any_installed()
+assert MaidSource().items("") == []
+print("suite empty passed")
+EOF
+ok "suite checker"
+rm -rf /tmp/mr-one /tmp/mr-none
 
 echo "== maid scroll =="
 rm -rf /tmp/mr-cfg
@@ -340,6 +459,7 @@ rm -rf /tmp/mr-home
 ok "install + uninstall"
 
 echo "== cleanup =="
-rm -rf /tmp/mr-home /tmp/mr-xdg /tmp/mr-xdg2 /tmp/mr-cfg /tmp/mr-cfg2
+rm -rf /tmp/mr-home /tmp/mr-xdg /tmp/mr-xdg2 /tmp/mr-cfg /tmp/mr-cfg2 \
+  /tmp/mr-bin /tmp/mr-one /tmp/mr-none /tmp/mr-term
 ok "cleanup"
 echo "ALL $PASS PASSED"
