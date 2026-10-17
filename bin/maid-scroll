@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Maid Scroll entry: list/scroll/set the app theme. Pure python, no
+# display needed; the state lives in ~/.config/maid-scroll/theme.
+set -u
+HERE="$(cd "$(dirname "$0")" && pwd)"
+PKG="$HERE/../lib/maid-runner"
+
+if [ -d "$PKG" ]; then
+  PYTHONPATH="$PKG" exec python3 -m maid_runner.scroll "$@"
+fi
+
+echo "Maid Scroll needs the maid-runner package installed." >&2
+exit 2
