@@ -32,7 +32,8 @@ your machine. to bind it on Plasma:
 rofi fallback users: same steps with whatever rofi command you run.
 
 type to filter, TAB to change source (shift+TAB goes back), enter to
-run, esc - or a click outside the card - closes.
+run, esc - or a click outside the card - closes. caps lock cycles the
+six palette themes.
 empty query on Maid lists every suite action.
 
 ## sources
@@ -65,7 +66,9 @@ Qt 6.
 
 same comfortable drun layout in six palettes (only colors differ,
 so diffs stay readable): `maid-dark` (breeze match), `maid-light`,
-`maid-tokyo`, `maid-mallow`, `maid-green`, `maid-blue`.
+`maid-tokyo`, `maid-mallow`, `maid-green`, `maid-blue`. the qt app
+loads the same six palettes - caps lock cycles them and it opens
+on `maid-tokyo`.
 
 ```sh
 bash install.sh --set mallow      # copy + activate maid-mallow

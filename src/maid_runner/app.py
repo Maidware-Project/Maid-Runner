@@ -5,6 +5,9 @@ inside it (the rofi look). The card is placed by layout, not by asking
 the compositor to move the toplevel: Wayland never lets an app position
 its own window, so the old move() centering silently did nothing there
 and the window landed wherever KWin wanted.
+
+Caps lock cycles the six palettes the rofi themes use, so the app and
+the fallback stay one family.
 """
 
 import os
@@ -27,29 +30,56 @@ from .sources.web import WebSource
 # Override locally with MAID_RUNNER_SUBTITLES; the repo default stays.
 SUBTITLE_MODE = os.environ.get("MAID_RUNNER_SUBTITLES", "maid")
 
+# The six rofi fallback palettes (themes/maid-*.rasi), same names and
+# hex values - only the colors the window needs. Caps lock cycles them;
+# the window opens on tokyo, which is what it always looked like.
+PALETTES = [
+    ("dark", {"bg": "#232629", "bg_alt": "#2a2e32", "fg": "#fcfcfc",
+              "muted": "#7a7e85", "accent": "#3daee9"}),
+    ("light", {"bg": "#fcfcfc", "bg_alt": "#eff0f1", "fg": "#232629",
+               "muted": "#7f8c8d", "accent": "#3daee9"}),
+    ("tokyo", {"bg": "#1a1b26", "bg_alt": "#24283b", "fg": "#c0caf5",
+               "muted": "#565f89", "accent": "#5cb9ae"}),
+    ("mallow", {"bg": "#121212", "bg_alt": "#1e1e1e", "fg": "#ececec",
+                "muted": "#757575", "accent": "#efa8c4"}),
+    ("green", {"bg": "#121212", "bg_alt": "#1c1c1c", "fg": "#ececec",
+               "muted": "#7a7a7a", "accent": "#1db954"}),
+    ("blue", {"bg": "#0f1419", "bg_alt": "#182028", "fg": "#e6edf3",
+              "muted": "#6e7681", "accent": "#58a6ff"}),
+]
+DEFAULT_THEME = 2  # tokyo
+
 # The card is the visible "box"; clamped down on tiny screens.
 CARD_W, CARD_H = 640, 470
 # Backdrop dim over the desktop; translucent, wallpaper reads through.
 BACKDROP = QColor(10, 11, 18, 120)
 
-STYLE = """
-QFrame#card { background-color: #1a1b26; border: 1px solid #2b3049; border-radius: 18px; }
-QLineEdit#search { background-color: #24283b; border: 1px solid #343b58; border-radius: 12px;
-    padding: 12px 16px; font-size: 16px; color: #c0caf5;
-    selection-background-color: #5cb9ae; selection-color: #1a1b26; }
-QLineEdit#search:focus { border-color: #5cb9ae; }
-QLabel#source { color: #5cb9ae; font-size: 12px; font-weight: 600; }
-QLabel#hint { color: #565f89; font-size: 11px; }
-QLabel#empty { color: #565f89; font-size: 14px; }
-QLabel#title { color: #c0caf5; font-size: 15px; }
-QLabel#sub { color: #565f89; font-size: 12px; }
-QListWidget#list { background: transparent; border: none; outline: 0; padding: 2px; }
-QListWidget#list::item { border: 1px solid transparent; border-radius: 10px; margin: 1px 4px; }
-QListWidget#list::item:hover { background-color: #202337; border-color: #2b3049; }
-QListWidget#list::item:selected { background-color: #223047; border-color: #5cb9ae; }
-"""
+HINT = "tab switch  ·  shift+tab back  ·  enter run  ·  esc close  ·  caps lock: {}"
 
-HINT = "tab switch  ·  shift+tab back  ·  enter run  ·  esc close"
+
+def _rgba(hex_color, alpha):
+    r, g, b = (int(hex_color[i:i + 2], 16) for i in (1, 3, 5))
+    return f"rgba({r}, {g}, {b}, {round(alpha * 255)})"
+
+
+def _style(p):
+    """One palette as the window stylesheet; borders derive from it."""
+    return f"""
+QFrame#card {{ background-color: {p['bg']}; border: 1px solid {_rgba(p['muted'], 0.35)}; border-radius: 18px; }}
+QLineEdit#search {{ background-color: {p['bg_alt']}; border: 1px solid {_rgba(p['muted'], 0.35)};
+    border-radius: 12px; padding: 12px 16px; font-size: 16px; color: {p['fg']};
+    selection-background-color: {p['accent']}; selection-color: {p['bg']}; }}
+QLineEdit#search:focus {{ border-color: {p['accent']}; }}
+QLabel#source {{ color: {p['accent']}; font-size: 12px; font-weight: 600; }}
+QLabel#hint {{ color: {p['muted']}; font-size: 11px; }}
+QLabel#empty {{ color: {p['muted']}; font-size: 14px; }}
+QLabel#title {{ color: {p['fg']}; font-size: 15px; }}
+QLabel#sub {{ color: {p['muted']}; font-size: 12px; }}
+QListWidget#list {{ background: transparent; border: none; outline: 0; padding: 2px; }}
+QListWidget#list::item {{ border: 1px solid transparent; border-radius: 10px; margin: 1px 4px; }}
+QListWidget#list::item:hover {{ background-color: {_rgba(p['fg'], 0.06)}; border-color: {_rgba(p['muted'], 0.3)}; }}
+QListWidget#list::item:selected {{ background-color: {_rgba(p['accent'], 0.15)}; border-color: {p['accent']}; }}
+"""
 
 
 class RunnerWindow(QDialog):
@@ -58,11 +88,11 @@ class RunnerWindow(QDialog):
         self.setWindowTitle("Maid Runner")
         self.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.FramelessWindowHint)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-        self.setStyleSheet(STYLE)
 
         self.sources = [AppsSource(), MaidSource(), RunSource(),
                         CalcSource(), WebSource()]
         self.source_idx = 0
+        self.theme_idx = DEFAULT_THEME
         self.rows = []
 
         root = QVBoxLayout(self)
@@ -92,9 +122,6 @@ class RunnerWindow(QDialog):
         self.search = QLineEdit(self.card)
         self.search.setObjectName("search")
         self.search.setPlaceholderText("Type to search")
-        pal = self.search.palette()
-        pal.setColor(QPalette.ColorRole.PlaceholderText, QColor("#565f89"))
-        self.search.setPalette(pal)
         self.search.textChanged.connect(self.refresh)
         lay.addWidget(self.search)
 
@@ -102,11 +129,11 @@ class RunnerWindow(QDialog):
         head.setContentsMargins(4, 0, 4, 0)
         self.source_label = QLabel(self.card)
         self.source_label.setObjectName("source")
-        hint = QLabel(HINT, self.card)
-        hint.setObjectName("hint")
+        self.hint = QLabel(self.card)
+        self.hint.setObjectName("hint")
         head.addWidget(self.source_label)
         head.addStretch(1)
-        head.addWidget(hint)
+        head.addWidget(self.hint)
         lay.addLayout(head)
 
         self.list = QListWidget(self.card)
@@ -127,6 +154,15 @@ class RunnerWindow(QDialog):
         lay.addWidget(self.stack, 1)
 
         self.refresh()
+        self.apply_theme()
+
+    def apply_theme(self):
+        name, p = PALETTES[self.theme_idx]
+        self.setStyleSheet(_style(p))
+        pal = self.search.palette()
+        pal.setColor(QPalette.ColorRole.PlaceholderText, QColor(p["muted"]))
+        self.search.setPalette(pal)
+        self.hint.setText(HINT.format(name))
 
     def mousePressEvent(self, event):  # noqa: N802
         # card widgets handle their own clicks; a press landing on the
@@ -150,6 +186,9 @@ class RunnerWindow(QDialog):
                     or bool(event.modifiers() & Qt.KeyboardModifier.ShiftModifier))
             self.source_idx = (self.source_idx + (-1 if back else 1)) % len(self.sources)
             self.refresh()
+        elif key == Qt.Key.Key_CapsLock:
+            self.theme_idx = (self.theme_idx + 1) % len(PALETTES)
+            self.apply_theme()
         elif key in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
             self.run_current()
         elif key == Qt.Key.Key_Up:
