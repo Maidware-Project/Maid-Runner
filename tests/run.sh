@@ -160,6 +160,37 @@ w.source_idx = names.index("Maid")
 w.search.setText("")
 w.refresh(); app.processEvents()
 assert w.list.count() >= 1 and sub_count() >= 1, "maid rows need subtitles"
+# window contract: TAB/shift+TAB cycle, the card centers itself, esc
+# and backdrop clicks close, card clicks do not. QTest drives the real
+# event pipeline - focus traversal is exactly what ate TAB before.
+from PyQt6.QtCore import QPoint, Qt
+from PyQt6.QtTest import QTest
+w.show()
+w.search.setFocus()
+app.processEvents()
+i0 = w.source_idx
+QTest.keyClick(w.search, Qt.Key.Key_Tab)
+app.processEvents()
+assert w.source_idx == (i0 + 1) % len(w.sources), "TAB must reach the next source"
+QTest.keyClick(w.search, Qt.Key.Key_Tab, Qt.KeyboardModifier.ShiftModifier)
+app.processEvents()
+assert w.source_idx == i0, "shift+TAB must go back"
+w.resize(1280, 800)
+app.processEvents()
+c, r = w.card.geometry(), w.rect()
+assert abs(c.center().x() - r.center().x()) <= 4, ("card must sit centered", c, r)
+assert abs(c.center().y() - r.center().y()) <= 4, ("card must sit centered", c, r)
+QTest.keyClick(w.search, Qt.Key.Key_Escape)
+app.processEvents()
+assert not w.isVisible(), "esc must close"
+w.show(); app.processEvents()
+QTest.mouseClick(w, Qt.MouseButton.LeftButton,
+                 pos=w.card.geometry().topLeft() + QPoint(w.card.width() // 2, 30))
+app.processEvents()
+assert w.isVisible(), "clicking the card must not close"
+QTest.mouseClick(w, Qt.MouseButton.LeftButton, pos=QPoint(4, 4))
+app.processEvents()
+assert not w.isVisible(), "clicking the dim backdrop must close"
 print("offscreen smoke passed")
 EOF
 ok "offscreen smoke"
