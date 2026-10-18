@@ -133,6 +133,22 @@ the installer can set the active palette at install time:
 bash install.sh --set mallow      # store mallow as the active palette
 ```
 
+## after a big system upgrade
+
+If a system upgrade runs while the session is up (zypper dist-upgrade
+and friends), Qt, PipeWire and the GL stack get swapped under the
+running desktop. The old binaries keep executing the libraries no
+longer on disk, and within minutes that bites: observed here -
+plasmashell dying in a qml timer callback and kwin printing 
+EGL_BAD_MATCH after the swap (2026-10-19), plus two earlier pipewire
+module crashes (2026-10-14).
+
+Maid Runner itself survives this untouched (it is just a Qt app), but
+its playground should not run half-covered stacks. After a big
+upgrade, log out and back in before trusting the session. Systemd
+restarts plasmashell in about a second, but that restart alone leaves
+part of the desktop on old libraries while the rest rides new ones.
+
 ## uninstall
 
 ```sh
