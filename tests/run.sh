@@ -199,6 +199,180 @@ print("terminal picker passed")
 EOF
 ok "terminal picker"
 
+echo "== resident toggle channel =="
+rm -rf /tmp/mr-run && mkdir -p /tmp/mr-run
+XDG_RUNTIME_DIR=/tmp/mr-run PYTHONPATH="$SRC" python3 - <<'EOF' || fail "toggle channel"
+from maid_runner import toggle
+
+# per-runtime socket path; nothing listens yet
+assert toggle.socket_path() == "/tmp/mr-run/maid-runner.sock", toggle.socket_path()
+assert toggle.send("ping") is False
+
+first = toggle.listen()
+assert first is not None, "first instance must own the socket"
+# a live instance keeps the socket: the second listen() refuses, and
+# the ping it used to ask really reaches the owner
+assert toggle.listen() is None, "second instance must refuse"
+first.setblocking(True)
+first.settimeout(2)
+conn, _addr = first.accept()
+assert conn.recv(64) == b"ping\n", "the refusing call must ping the owner"
+conn.close()
+# and a word really crosses the socket, newline-terminated
+assert toggle.send("show") is True
+conn, _addr = first.accept()
+assert conn.recv(64) == b"show\n", "word must arrive newline-terminated"
+conn.close()
+
+# a crashed instance leaves a dead socket file: the next listen
+# takes the path over (bind fails, ping gets no answer)
+first.close()  # the socket file stays behind, nothing listens
+second = toggle.listen()
+assert second is not None, "dead socket file must be taken over"
+second.close()
+print("toggle channel passed")
+EOF
+ok "resident toggle channel"
+
+echo "== files search =="
+rm -rf /tmp/mr-files && mkdir -p /tmp/mr-files/docs /tmp/mr-files/node_modules /tmp/mr-files/.hidden
+: > "/tmp/mr-files/docs/Taxes-2025.pdf"
+: > "/tmp/mr-files/docs/meeting-notes.txt"
+: > "/tmp/mr-files/node_modules/skipme.txt"
+: > "/tmp/mr-files/.hidden/skip.txt"
+: > "/tmp/mr-files/.dotfile"
+HOME=/tmp/mr-files MAID_RUNNER_FILES=/tmp/mr-files PYTHONPATH="$SRC" python3 - <<'EOF' || fail "files search"
+import os
+import time
+from maid_runner.sources.files import FileIndex, FilesSource, _roots
+
+assert _roots() == ["/tmp/mr-files"], _roots()
+idx = FileIndex()
+assert idx.files == [] and idx.scanning is False
+assert idx.start() is True
+while idx.scanning:
+    time.sleep(0.01)
+names = sorted(os.path.basename(p) for p in idx.files)
+assert names == ["Taxes-2025.pdf", "meeting-notes.txt"], names
+
+src = FilesSource(index=idx)
+rows = src.items("tax")           # basename prefix
+assert rows and rows[0][0] == "Taxes-2025.pdf", rows
+assert rows[0][1] == "~/docs", rows[0][1]  # the home path reads as ~
+rows = src.items("notes")         # a word inside the name
+assert any(r[0] == "meeting-notes.txt" for r in rows), rows
+assert src.items("t") == []       # one letter is not a search
+assert src.items("zzz") == []
+# rescans are rate-limited and swap in a fresh list; the source's
+# constructor started one already, so let that land first
+while idx.scanning:
+    time.sleep(0.01)
+assert idx.refresh(age=10**9) is False
+assert idx.refresh(age=0) is True
+while idx.scanning:
+    time.sleep(0.01)
+print("files search passed")
+EOF
+ok "files search"
+
+echo "== category tabs =="
+rm -rf /tmp/mr-xdg3 && mkdir -p /tmp/mr-xdg3/applications
+cat > /tmp/mr-xdg3/applications/net.desktop <<'EOF'
+[Desktop Entry]
+Name=Net Tool
+Exec=/usr/bin/nettool
+Type=Application
+Categories=Network;WebDevelopment;
+EOF
+cat > /tmp/mr-xdg3/applications/game.desktop <<'EOF'
+[Desktop Entry]
+Name=Game Tool
+Exec=/usr/bin/gametool
+Type=Application
+Categories=Game;Graphics;
+EOF
+XDG_DATA_HOME=/tmp/mr-xdg3 XDG_DATA_DIRS=/nonexistent PYTHONPATH="$SRC" python3 - <<'EOF' || fail "category tabs"
+from maid_runner.sources.apps import (AppsSource, CATEGORY_TOKENS,
+                                      categories_present, load_apps)
+apps = load_apps()
+got = {a["name"]: a for a in apps}
+assert set(got) == {"Net Tool", "Game Tool"}, got.keys()
+# an app sits in every tab its Categories= honestly names
+assert got["Net Tool"]["buckets"] == {"Internet", "Development"}
+assert got["Game Tool"]["buckets"] == {"Games", "Graphics"}
+# tabs: only categories with apps, in the menu's order
+present = categories_present(apps)
+assert present == ["Internet", "Games", "Graphics", "Development"], present
+tabs = {name: [row[0] for row in AppsSource(apps, category=name).items("")]
+        for name, _tokens in CATEGORY_TOKENS}
+assert tabs["Internet"] == ["Net Tool"] and tabs["Games"] == ["Game Tool"]
+assert tabs["Office"] == [] and tabs["Multimedia"] == []
+assert AppsSource(apps, category="Games").name == "Games"
+print("category tabs passed")
+EOF
+ok "category tabs"
+
+echo "== run source gui/terminal =="
+rm -rf /tmp/mr-runs && mkdir -p /tmp/mr-runs
+for b in guitool clitool mystery; do
+  printf '#!/bin/sh\nexit 0\n' > "/tmp/mr-runs/$b"
+  chmod +x "/tmp/mr-runs/$b"
+done
+PYTHONPATH="$SRC" python3 - <<'EOF' || fail "run source"
+import os
+# the source reads PATH at construction; point it at the fixture then
+os.environ["PATH"] = "/tmp/mr-runs"
+from maid_runner.sources import run as runmod
+from maid_runner.sources.run import RunSource, _gui_wants
+
+apps = [
+    {"name": "Gui", "exec": "/usr/bin/guitool %U", "terminal": False,
+     "generic": "", "comment": "", "keywords": "", "icon": ""},
+    {"name": "Cli", "exec": "/usr/bin/clitool --flag", "terminal": True,
+     "generic": "", "comment": "", "keywords": "", "icon": ""},
+]
+assert _gui_wants(apps) == {"guitool": False, "clitool": True}
+r = RunSource(apps)
+# the desktop entry decides: Terminal=false means no terminal window
+assert dict((t, s) for t, s, _, _ in r.items("guitool"))["guitool"] == "run"
+assert dict((t, s) for t, s, _, _ in r.items("clitool"))["clitool"] == "run in terminal"
+assert dict((t, s) for t, s, _, _ in r.items("mystery"))["mystery"] == "run in terminal"
+# args ride along and the flag reaches launch()
+calls = []
+runmod.launch = lambda argv, terminal=False: (calls.append((argv, terminal)), True)[1]
+assert r.activate(("guitool", "x --y")) is True
+assert calls == [(["guitool", "x", "--y"], False)], calls
+assert r.activate(("mystery", "")) is True
+assert calls[1] == (["mystery"], True), calls
+assert r.items("") == []
+print("run source passed")
+EOF
+ok "run source gui/terminal"
+
+echo "== web opens externally =="
+PYTHONPATH="$SRC" python3 - <<'EOF' || fail "web open"
+from maid_runner.sources import files as filesmod
+from maid_runner.sources import web as webmod
+
+calls = []
+webmod.open_external = lambda t: (calls.append(t), True)[1]
+filesmod.open_external = lambda t: (calls.append(t), True)[1]
+
+w = webmod.WebSource()
+assert w.activate("example.com") is True
+assert calls[-1] == "https://example.com", calls
+assert w.activate("https://example.com/x") is True
+assert calls[-1] == "https://example.com/x"
+# a file row opens through the same system handler, not inside the app
+from maid_runner.sources.files import FileIndex, FilesSource
+idx = FileIndex(roots=["/nonexistent-mr-web"])
+f = FilesSource(index=idx)
+assert f.activate("/tmp/mr-web-fixture.txt") is True
+assert calls[-1] == "/tmp/mr-web-fixture.txt"
+print("web open passed")
+EOF
+ok "web opens externally"
+
 echo "== suite checker =="
 # full fixture: every action shows
 MAID_RUNNER_BIN=/tmp/mr-bin PYTHONPATH="$SRC" python3 - <<'EOF' || fail "suite full"
@@ -310,9 +484,11 @@ EOF
 ok "palettes match themes"
 
 echo "== offscreen smoke =="
-rm -rf /tmp/mr-xdg2 /tmp/mr-cfg2 && mkdir -p /tmp/mr-xdg2/applications
+rm -rf /tmp/mr-xdg2 /tmp/mr-cfg2 /tmp/mr-smokefiles && mkdir -p /tmp/mr-xdg2/applications /tmp/mr-smokefiles
 printf '[Desktop Entry]\nName=Smoke App\nExec=/usr/bin/smoke\nType=Application\n' > /tmp/mr-xdg2/applications/smoke.desktop
-QT_QPA_PLATFORM=offscreen XDG_CONFIG_HOME=/tmp/mr-cfg2 XDG_DATA_HOME=/tmp/mr-xdg2 XDG_DATA_DIRS=/nonexistent PYTHONPATH="$SRC" python3 - <<'EOF' || fail "offscreen smoke"
+printf '[Desktop Entry]\nName=Dev Tool\nExec=/usr/bin/devtool\nType=Application\nCategories=Development;\n' > /tmp/mr-xdg2/applications/dev.desktop
+: > /tmp/mr-smokefiles/smokefile.txt
+QT_QPA_PLATFORM=offscreen XDG_CONFIG_HOME=/tmp/mr-cfg2 XDG_DATA_HOME=/tmp/mr-xdg2 XDG_DATA_DIRS=/nonexistent MAID_RUNNER_BIN=/tmp/mr-bin MAID_RUNNER_FILES=/tmp/mr-smokefiles PYTHONPATH="$SRC" python3 - <<'EOF' || fail "offscreen smoke"
 from maid_runner.app import PALETTES, RunnerWindow
 from maid_runner import palettes
 from PyQt6.QtWidgets import QApplication, QLabel
@@ -334,6 +510,10 @@ def sub_count():
             n += 1
     return n
 names = [s.name for s in w.sources]
+# roster contract: apps first, the categories, the Maid suite group
+# where the app manager keeps it (before Development), tools last
+assert names == ["Applications", "Maid", "Development", "Files", "Run",
+                 "Calculator", "Web"], names
 assert w.list.count() > 0, "empty app list"
 w.search.setText("smoke")
 app.processEvents()
@@ -355,6 +535,19 @@ w.source_idx = names.index("Maid")
 w.search.setText("")
 w.refresh(); app.processEvents()
 assert w.list.count() >= 1 and sub_count() >= 1, "maid rows need subtitles"
+# files tab: the background scan answers (tiny fixture, done in ms)
+w.source_idx = names.index("Files")
+w.search.setText("smokefile")
+import time as _time
+_deadline = _time.time() + 5
+while not w._files.files and _time.time() < _deadline:
+    app.processEvents()
+    _time.sleep(0.01)
+w.refresh(); app.processEvents()
+assert titles() == ["smokefile.txt"], titles()
+# layer-shell routing is a no-op away from wayland and must not crash
+from maid_runner.wayland import attach_layer
+assert attach_layer(w.windowHandle()) is False
 # window contract: TAB/shift+TAB cycle, the card centers itself, esc
 # and backdrop clicks close, card clicks do not. QTest drives the real
 # event pipeline - focus traversal is exactly what ate TAB before.
@@ -456,7 +649,8 @@ rm -rf /tmp/mr-home
 ok "install + uninstall"
 
 echo "== cleanup =="
-rm -rf /tmp/mr-home /tmp/mr-xdg /tmp/mr-xdg2 /tmp/mr-cfg /tmp/mr-cfg2 \
-  /tmp/mr-bin /tmp/mr-one /tmp/mr-none /tmp/mr-term
+rm -rf /tmp/mr-home /tmp/mr-xdg /tmp/mr-xdg2 /tmp/mr-xdg3 /tmp/mr-cfg \
+  /tmp/mr-cfg2 /tmp/mr-bin /tmp/mr-one /tmp/mr-none /tmp/mr-term \
+  /tmp/mr-run /tmp/mr-files /tmp/mr-runs /tmp/mr-smokefiles
 ok "cleanup"
 echo "ALL $PASS PASSED"

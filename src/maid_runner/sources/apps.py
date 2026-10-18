@@ -37,9 +37,8 @@ CATEGORY_TOKENS = (
 def categories_present(apps):
     """Tab names that have at least one app on this machine, in order."""
     out = []
-    for name, tokens in CATEGORY_TOKENS:
-        wanted = set(tokens)
-        if any(wanted & app["buckets"] for app in apps):
+    for name, _tokens in CATEGORY_TOKENS:
+        if any(name in app["buckets"] for app in apps):
             out.append(name)
     return out
 
