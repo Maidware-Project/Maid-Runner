@@ -1,6 +1,6 @@
 # Maid Runner - search everything from one key
 
-a launcher and search box (Qt) for kde plasma: a centered search card over a dimmed backdrop. type, hit enter. tab cycles sources - applications (from kde menu), maid (suite actions), run (path commands), calculator, web. caps lock cycles the six Maid Scroll palettes. no accounts, no daemons, no indexing service.
+a launcher and search box (Qt) for kde plasma: a centered search card over a dimmed backdrop. type, hit enter. tab moves between tabs that mirror your app menu - all applications, then the menu's groups (internet, games, multimedia, ...) - plus the maid suite, files, run, calculator and web. caps lock cycles the six Maid Scroll palettes. native wayland, no taskbar icon, no accounts, no telemetry.
 
 ```
 src/maid_runner/             the Qt app (window + one module per source)
@@ -19,8 +19,8 @@ install.sh                   installer (files only, no packages)
 bash install.sh            # app + palettes + launcher
 ```
 
-bind `maid-runner` to a key, or run it from your apps menu once - it
-*is* an application entry itself.
+bind `maid-runner --toggle` to a key (below), or run it from your
+apps menu - it *is* an application entry itself.
 
 ## keybinding 
 
@@ -28,35 +28,65 @@ the repo never sets keybinds - that's personal config and stays on
 your machine. to bind it on Plasma:
 
 1. Settings → Keyboard → Shortcuts → Custom Shortcuts
-2. Add → Command/URL, command: `~/.local/bin/maid-runner`
+2. Add → Command/URL, command: `~/.local/bin/maid-runner --toggle`
 3. set whatever key feels right (Meta+Space is the classic runner key)
 
-type to filter, TAB to change source (shift+TAB goes back), enter to
-run, esc - or a click outside the card - closes. caps lock cycles the
-six palettes and stores the pick, so the next launch opens on it.
-empty query on Maid lists every suite action.
+with `--toggle` one key both opens and closes the window; plain
+`maid-runner` always opens it. type to filter, TAB to change tab
+(shift+TAB goes back), enter to run, esc - or a click outside the
+card - closes. caps lock cycles the six palettes and stores the pick,
+so the next launch opens on it. empty query on Maid lists every
+suite action. opening and closing is a short fade at your desktop's
+animation speed (Plasma: animations set off means an instant swap).
+
+## resident
+
+the first launch stays around: closing the window hides it, and every
+later open is a repaint - instant - not a start. a second launch just
+hands over a word over a unix socket
+(`$XDG_RUNTIME_DIR/maid-runner.sock`) and exits.
+
+- `maid-runner`           open the window (starts the resident if none)
+- `maid-runner --toggle`  open if hidden, close if open - the keybind command
+- `maid-runner --service` start hidden and wait (autostart at login, your call)
+- `maid-runner --quit`    stop the resident
+
+on KWin the window is a wayland layer surface, so it never shows in
+the taskbar or alt-tab.
 
 ## sources
 
 - **Applications** - parsed from the same XDG menu data KDE shows
   (honors NoDisplay/Hidden/TryExec, flatpak exports included).
   terminal apps open in your terminal.
+- **the menu's groups** - internet, games, multimedia, graphics,
+  office, utilities, development, system, help: one tab per group that
+  has apps here, in the app manager's order. an app that honestly
+  sits in two categories sits in both tabs.
 - **Maid** - full use of the suite: earbuds to PC/phone/off/radio,
   system check/update, share to phone, receive from phone, helper
   check/fix. anything printing runs in a terminal; instant actions
-  run silent.
+  run silent. the tab appears once at least one Maid tool is
+  installed.
+- **Files** - your files by name, from your home folder. scanned in
+  the background while the runner is up, answered from memory; no
+  database, nothing stored.
 - **Run** - PATH binaries, always in a terminal so CLI tools work.
 - **Calculator** - safe arithmetic only (AST allowlist, never eval);
   enter copies the result.
-- **Web** - `yt query`, `wiki query`, `gh query`, `g/ddg query`,
-  bare URLs open directly, anything else asks SearXNG.
+- **Web** - `yt`/`wiki`/`gh`/`g`/`ddg`/`aw`/`aur`/`so` prefixes,
+  `!bang` goes to duckduckgo, bare URLs open directly, anything else
+  asks SearXNG. every result opens in your default browser, never
+  inside the runner.
 
 ## search
 
 bare text goes to [SearXNG](https://github.com/searxng/searxng), a free
 and open source metasearch engine. it is the official search behind
 Maid Runner on purpose: no profiles, no ad tracking, results pulled
-from many engines at once, so your searches stay yours.
+from many engines at once, so your searches stay yours. whatever you
+open - a search or a URL - opens in your default browser; the runner
+itself makes no network calls.
 
 the default instance is `search.jeremyh.xyz`. it is open source, so
 any public instance works - point the runner at another one with
@@ -65,6 +95,16 @@ any public instance works - point the runner at another one with
 ```sh
 MAID_RUNNER_SEARX=https://searxng.site maid-runner   # use another instance
 ```
+
+## weight
+
+the whole cost is one qt process. measured on a plasma wayland
+session: about 40 MB of its own while it waits before the first open
+(raw process size ~80 MB; the rest is qt6, shared with the rest of
+your desktop), about 75 MB of its own once the window has been built
+(raw ~135 MB). nothing else grows between opens. no database and no
+second process: the file list lives in memory while the runner does,
+and is gone when it is.
 
 ## why not krunner / rofi / albert?
 
