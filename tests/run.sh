@@ -540,21 +540,27 @@ names = [s.name for s in w.sources]
 assert names == ["Applications", "Maid", "Development", "Files", "Run",
                  "Calculator", "Web"], names
 assert w.list.count() > 0, "empty app list"
+# typing searches every source at once: no tab switch needed to find
+# an app, and the label says the scope
 w.search.setText("smoke")
 app.processEvents()
-assert titles() == ["Smoke App"], titles()
+assert "Smoke App" in titles(), titles()
+assert w.source_label.text() == "all sources", w.source_label.text()
+# math answers immediately - calc sits before its web fallback row
 w.search.setText("2+3*4")
 app.processEvents()
-assert w.list.count() == 0, "math query must not match apps"
-# calc tab answers the math
-w.source_idx = names.index("Calculator")
-w.refresh(); app.processEvents()
-assert titles() == ["14"], titles()
-# applications tab: single-line rows, no subtitles
+assert titles()[:1] == ["14"], titles()
+# clearing the box returns to the browsed tab
+w.search.setText("")
 w.source_idx = names.index("Applications")
-w.search.setText("smoke")
 w.refresh(); app.processEvents()
-assert titles() == ["Smoke App"] and sub_count() == 0, "apps rows must be single-line"
+assert w.source_label.text() == "Applications", w.source_label.text()
+# app rows stay single-line even when the search mixes sources
+w.search.setText("smoke")
+app.processEvents()
+i = titles().index("Smoke App")
+itw = w.list.itemWidget(w.list.item(i))
+assert itw.findChild(QLabel, "sub") is None, "app rows stay single-line"
 # maid tab: subtitles stay (the one place they earn their pixels)
 w.source_idx = names.index("Maid")
 w.search.setText("")
@@ -569,7 +575,7 @@ while not w._files.files and _time.time() < _deadline:
     app.processEvents()
     _time.sleep(0.01)
 w.refresh(); app.processEvents()
-assert titles() == ["smokefile.txt"], titles()
+assert titles() == ["smokefile.txt", "smokefile"], titles()
 # layer-shell routing is a no-op away from wayland and must not crash
 from maid_runner.wayland import attach_layer
 assert attach_layer(w.windowHandle()) is False

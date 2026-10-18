@@ -1,6 +1,6 @@
 # Maid Runner - search everything from one key
 
-a launcher and search box (Qt) for kde plasma: a centered search card over a dimmed backdrop. type, hit enter. tab moves between tabs that mirror your app menu - all applications, then the menu's groups (internet, games, multimedia, ...) - plus the maid suite, files, run, calculator and web. caps lock cycles the six Maid Scroll palettes. native wayland, no taskbar icon, no accounts, no telemetry.
+a launcher and search box (Qt) for kde plasma: a centered search card over a dimmed backdrop. type, hit enter. typing searches every source at once - all applications, the maid suite, files, run, calculator and web - so nothing needs a tab switch first; with the box empty, tab moves between tabs that mirror your app menu (all applications, then the menu's groups: internet, games, multimedia, ...). caps lock cycles the six Maid Scroll palettes. native wayland, no taskbar icon, no accounts, no telemetry.
 
 ```
 src/maid_runner/             the Qt app (window + one module per source)
@@ -32,8 +32,9 @@ your machine. to bind it on Plasma:
 3. set whatever key feels right (Meta+Space is the classic runner key)
 
 with `--toggle` one key both opens and closes the window; plain
-`maid-runner` always opens it. type to filter, TAB to change tab
-(shift+TAB goes back), enter to run, esc - or a click outside the
+`maid-runner` always opens it. typing finds things from every source
+at once - no tab switch needed; with the box empty, TAB browses the
+tabs (shift+TAB goes back). enter runs, esc - or a click outside the
 card - closes. caps lock cycles the six palettes and stores the pick,
 so the next launch opens on it. empty query on Maid lists every
 suite action. opening and closing is a short fade at your desktop's

@@ -1,4 +1,9 @@
-r"""Maid Runner window: one search box, TAB cycles sources.
+r"""Maid Runner window: one search box, type to search everything.
+
+Typing searches every source at once - apps, the Maid suite, files,
+run, calculator, web - so finding something never needs a tab switch
+first. TAB (shift+TAB back) still browses the app-menu-mirroring tabs
+while the box is empty.
 
 The window is a fullscreen dim overlay with the search card centered
 inside it. The card is placed by layout, not by asking the compositor
@@ -364,19 +369,42 @@ class RunnerWindow(QDialog):
         row.addLayout(col, 1)
         return w
 
+    def _search_everything(self, query):
+        """Every source answers the same query, in tab order.
+
+        A row remembers the source it came from, so enter runs the
+        right action. Category tabs sit out: they are the all-apps
+        source filtered down, not extra answers.
+        """
+        rows = []
+        for s in self.sources:
+            if getattr(s, "_category", None):
+                continue
+            for row in s.items(query):
+                rows.append((*row, s))
+                if len(rows) >= 40:
+                    return rows
+        return rows
+
     def refresh(self):
         src = self.sources[self.source_idx]
-        self.source_label.setText(src.name)
-        if SUBTITLE_MODE == "all":
-            show_sub = True
-        elif SUBTITLE_MODE == "none":
-            show_sub = False
-        else:
-            show_sub = getattr(src, "show_subtitles", False)
         query = self.search.text()
-        self.rows = src.items(query)
+        if query.strip():
+            # typing searches everything: finding an app must not need
+            # a tab switch first
+            self.source_label.setText("all sources")
+            self.rows = self._search_everything(query)
+        else:
+            self.source_label.setText(src.name)
+            self.rows = [(*row, src) for row in src.items(query)]
         self.list.clear()
-        for title, sub, icon, _payload in self.rows[:40]:
+        for title, sub, icon, _payload, row_src in self.rows[:40]:
+            if SUBTITLE_MODE == "all":
+                show_sub = True
+            elif SUBTITLE_MODE == "none":
+                show_sub = False
+            else:
+                show_sub = getattr(row_src, "show_subtitles", False)
             item = QListWidgetItem()
             row = self._row_widget(title, sub, icon, show_sub)
             item.setSizeHint(row.sizeHint())
@@ -393,8 +421,8 @@ class RunnerWindow(QDialog):
     def run_current(self):
         row = self.list.currentRow()
         if 0 <= row < len(self.rows):
-            _t, _s, _icon, payload = self.rows[row]
-            if self.sources[self.source_idx].activate(payload):
+            _t, _s, _icon, payload, row_src = self.rows[row]
+            if row_src.activate(payload):
                 self.close()
 
 
