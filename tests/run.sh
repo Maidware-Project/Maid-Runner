@@ -373,6 +373,31 @@ print("web open passed")
 EOF
 ok "web opens externally"
 
+echo "== animation speed =="
+rm -rf /tmp/mr-anim && mkdir -p /tmp/mr-anim
+printf '[KDE]\nAnimationDurationFactor=0.5\n' > /tmp/mr-anim/kdeglobals
+printf '[KDE]\nAnimationDurationFactor=2\n' > /tmp/mr-anim/slow
+printf '[KDE]\nAnimationDurationFactor=0.1\n' > /tmp/mr-anim/tiny
+printf '[KDE]\nAnimationDurationFactor=0\n' > /tmp/mr-anim/off
+PYTHONPATH="$SRC" python3 - <<'EOF' || fail "animation speed"
+import os
+from maid_runner.app import animation_duration
+
+os.environ["MAID_RUNNER_KDE_GLOBALS"] = "/tmp/mr-anim/kdeglobals"
+assert animation_duration(140) == 70, animation_duration(140)
+os.environ["MAID_RUNNER_KDE_GLOBALS"] = "/tmp/mr-anim/slow"
+assert animation_duration(140) == 280
+os.environ["MAID_RUNNER_KDE_GLOBALS"] = "/tmp/mr-anim/tiny"
+assert animation_duration(140) == 50, "a tiny factor keeps a visible fade"
+os.environ["MAID_RUNNER_KDE_GLOBALS"] = "/tmp/mr-anim/off"
+assert animation_duration(140) == 0, "0 means the desktop wants none"
+os.environ["MAID_RUNNER_KDE_GLOBALS"] = "/tmp/mr-anim/missing"
+assert animation_duration(140) == 140, "no config means normal speed"
+print("animation speed passed")
+EOF
+ok "animation speed"
+rm -rf /tmp/mr-anim
+
 echo "== suite checker =="
 # full fixture: every action shows
 MAID_RUNNER_BIN=/tmp/mr-bin PYTHONPATH="$SRC" python3 - <<'EOF' || fail "suite full"
@@ -488,7 +513,7 @@ rm -rf /tmp/mr-xdg2 /tmp/mr-cfg2 /tmp/mr-smokefiles && mkdir -p /tmp/mr-xdg2/app
 printf '[Desktop Entry]\nName=Smoke App\nExec=/usr/bin/smoke\nType=Application\n' > /tmp/mr-xdg2/applications/smoke.desktop
 printf '[Desktop Entry]\nName=Dev Tool\nExec=/usr/bin/devtool\nType=Application\nCategories=Development;\n' > /tmp/mr-xdg2/applications/dev.desktop
 : > /tmp/mr-smokefiles/smokefile.txt
-QT_QPA_PLATFORM=offscreen XDG_CONFIG_HOME=/tmp/mr-cfg2 XDG_DATA_HOME=/tmp/mr-xdg2 XDG_DATA_DIRS=/nonexistent MAID_RUNNER_BIN=/tmp/mr-bin MAID_RUNNER_FILES=/tmp/mr-smokefiles PYTHONPATH="$SRC" python3 - <<'EOF' || fail "offscreen smoke"
+QT_QPA_PLATFORM=offscreen XDG_CONFIG_HOME=/tmp/mr-cfg2 XDG_DATA_HOME=/tmp/mr-xdg2 XDG_DATA_DIRS=/nonexistent MAID_RUNNER_BIN=/tmp/mr-bin MAID_RUNNER_FILES=/tmp/mr-smokefiles MAID_RUNNER_KDE_GLOBALS=/tmp/mr-anim-none PYTHONPATH="$SRC" python3 - <<'EOF' || fail "offscreen smoke"
 from maid_runner.app import PALETTES, RunnerWindow
 from maid_runner import palettes
 from PyQt6.QtWidgets import QApplication, QLabel
@@ -581,19 +606,26 @@ assert PALETTES[w2.theme_idx][0] == "mallow", "window must open on the stored th
 palettes.save("tokyo")
 w.resize(1280, 800)
 app.processEvents()
-c, r = w.card.geometry(), w.rect()
+c, r = w.card_holder.geometry(), w.rect()
 assert abs(c.center().x() - r.center().x()) <= 4, ("card must sit centered", c, r)
 assert abs(c.center().y() - r.center().y()) <= 4, ("card must sit centered", c, r)
 QTest.keyClick(w.search, Qt.Key.Key_Escape)
-app.processEvents()
+QTest.qWait(400)  # the close is a fade, then a hide
 assert not w.isVisible(), "esc must close"
-w.show(); app.processEvents()
+assert w._fade == 0.0, "esc must have faded the window out"
+# pop_up fades back in and leaves no effect behind at rest
+w.pop_up()
+QTest.qWait(400)
+assert w.isVisible() and w._fade == 1.0, "pop_up must fade in"
+assert w.card_holder.graphicsEffect() is None, \
+    "an open window must not carry a fade effect"
 QTest.mouseClick(w, Qt.MouseButton.LeftButton,
-                 pos=w.card.geometry().topLeft() + QPoint(w.card.width() // 2, 30))
+                 pos=w.card_holder.geometry().topLeft()
+                 + QPoint(w.card_holder.width() // 2, 50))
 app.processEvents()
 assert w.isVisible(), "clicking the card must not close"
 QTest.mouseClick(w, Qt.MouseButton.LeftButton, pos=QPoint(4, 4))
-app.processEvents()
+QTest.qWait(400)  # the close is a fade, then a hide
 assert not w.isVisible(), "clicking the dim backdrop must close"
 print("offscreen smoke passed")
 EOF
@@ -651,6 +683,6 @@ ok "install + uninstall"
 echo "== cleanup =="
 rm -rf /tmp/mr-home /tmp/mr-xdg /tmp/mr-xdg2 /tmp/mr-xdg3 /tmp/mr-cfg \
   /tmp/mr-cfg2 /tmp/mr-bin /tmp/mr-one /tmp/mr-none /tmp/mr-term \
-  /tmp/mr-run /tmp/mr-files /tmp/mr-runs /tmp/mr-smokefiles
+  /tmp/mr-run /tmp/mr-files /tmp/mr-runs /tmp/mr-smokefiles /tmp/mr-anim
 ok "cleanup"
 echo "ALL $PASS PASSED"

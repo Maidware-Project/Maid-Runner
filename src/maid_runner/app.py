@@ -9,6 +9,8 @@ window landed wherever KWin wanted.
 The process is resident: the first launch opens the window and stays
 around, later ones flip it over a unix socket (toggle.py). Closing the
 window hides it, so the next keybind press is a repaint, not a start.
+Opening and closing is a short fade that follows Plasma's
+animation-speed setting.
 On KWin the window is a layer surface (wayland.py), which keeps it out
 of the taskbar and alt-tab without changing its look.
 
@@ -16,15 +18,17 @@ Caps lock cycles the six Maid Scroll palettes and stores the pick; the
 window and the shipped themes stay one family.
 """
 
+import configparser
 import os
 
-from PyQt6.QtCore import QObject, QSocketNotifier, Qt
+from PyQt6.QtCore import (QEasingCurve, QObject, QSocketNotifier, Qt,
+                          QVariantAnimation)
 from PyQt6.QtGui import QColor, QIcon, QPainter, QPalette
 from PyQt6.QtWidgets import (QApplication, QDialog, QFrame,
-                             QGraphicsDropShadowEffect, QHBoxLayout, QLabel,
-                             QLineEdit, QListWidget, QListWidgetItem,
-                             QStackedWidget, QStyleFactory, QVBoxLayout,
-                             QWidget)
+                             QGraphicsDropShadowEffect, QGraphicsOpacityEffect,
+                             QHBoxLayout, QLabel, QLineEdit, QListWidget,
+                             QListWidgetItem, QStackedWidget, QStyleFactory,
+                             QVBoxLayout, QWidget)
 
 from . import toggle
 from .palettes import PALETTES, index_of, load, save
@@ -47,6 +51,34 @@ CARD_W, CARD_H = 640, 470
 BACKDROP = QColor(10, 11, 18, 120)
 
 HINT = "tab switch  ·  shift+tab back  ·  enter run  ·  esc close  ·  caps lock: {}"
+
+# Open/close fade lengths before the desktop's animation speed scales
+# them; short on purpose, a launcher should feel snappy.
+FADE_IN_MS, FADE_OUT_MS = 140, 110
+
+
+def animation_duration(base_ms):
+    """Scale a fade by Plasma's animation speed (kdeglobals).
+
+    [KDE] AnimationDurationFactor multiplies animation durations; 0
+    means the user turned animations off, so the fade collapses to an
+    instant swap. Read on every use (one small file) so a change in
+    System Settings is felt on the next open. Anything unreadable or
+    nonsense means normal speed; the floor keeps a very small factor
+    from turning the fade into a flicker.
+    """
+    path = os.environ.get("MAID_RUNNER_KDE_GLOBALS",
+                          os.path.expanduser("~/.config/kdeglobals"))
+    try:
+        cp = configparser.ConfigParser(interpolation=None)
+        cp.read(path)
+        factor = float(cp.get("KDE", "AnimationDurationFactor",
+                              fallback="1"))
+    except (OSError, ValueError, configparser.Error):
+        factor = 1.0
+    if factor <= 0:
+        return 0
+    return max(50, round(base_ms * factor))
 
 
 def _rgba(hex_color, alpha):
@@ -106,6 +138,11 @@ class RunnerWindow(QDialog):
         self.source_idx = 0
         self.theme_idx = index_of(load())
         self.rows = []
+        # One fade drives the backdrop alpha and the card's opacity;
+        # 1.0 is the resting state and carries no effect at all.
+        self._fade = 1.0
+        self._going_out = False
+        self._anim = None
 
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
@@ -122,7 +159,13 @@ class RunnerWindow(QDialog):
         shadow.setOffset(0, 10)
         shadow.setColor(QColor(0, 0, 0, 170))
         self.card.setGraphicsEffect(shadow)
-        mid.addWidget(self.card)
+        # The card rides inside a holder with margin room for the
+        # shadow, so the fade effect (on the holder) never clips it.
+        self.card_holder = QWidget(self)
+        holder_lay = QVBoxLayout(self.card_holder)
+        holder_lay.setContentsMargins(30, 30, 30, 30)
+        holder_lay.addWidget(self.card)
+        mid.addWidget(self.card_holder)
         mid.addStretch(1)
         root.addLayout(mid)
         root.addStretch(1)
@@ -183,8 +226,67 @@ class RunnerWindow(QDialog):
             self.search.clear()  # textChanged refreshes the list
         else:
             self.refresh()
+        if not self.isVisible():
+            self._set_fade(0.0)  # the first painted frame is transparent
+        self._going_out = False
         self.showFullScreen()
         self.search.setFocus()
+        self._animate(1.0, FADE_IN_MS)
+
+    def dismiss(self):
+        """Fade the window out, then hide it."""
+        if not self.isVisible() or self._going_out:
+            return
+        self._going_out = True
+        self._animate(0.0, FADE_OUT_MS, after=self._hide_now)
+
+    def _hide_now(self):
+        self.hide()
+        self._going_out = False
+
+    def _set_fade(self, value):
+        """One frame of the fade: backdrop alpha + card opacity."""
+        self._fade = max(0.0, min(1.0, float(value)))
+        self.update()  # paintEvent draws the backdrop through _fade
+        # The card fades through a temporary opacity effect; at rest it
+        # comes off again, so an open window pays no compositing cost.
+        eff = self.card_holder.graphicsEffect()
+        if self._fade >= 1.0:
+            if eff is not None:
+                self.card_holder.setGraphicsEffect(None)
+            return
+        if eff is None:
+            eff = QGraphicsOpacityEffect(self.card_holder)
+            self.card_holder.setGraphicsEffect(eff)
+        eff.setOpacity(self._fade)
+
+    def _animate(self, to, base_ms, after=None):
+        if self._anim is not None:
+            self._anim.stop()
+        ms = animation_duration(base_ms)
+        if ms <= 0:  # animations turned off in the desktop's settings
+            self._set_fade(to)
+            if after is not None:
+                after()
+            return
+        anim = QVariantAnimation(self)
+        anim.setStartValue(self._fade)
+        anim.setEndValue(float(to))
+        anim.setDuration(ms)
+        anim.setEasingCurve(QEasingCurve.Type.OutCubic
+                            if to >= self._fade
+                            else QEasingCurve.Type.InCubic)
+        anim.valueChanged.connect(self._set_fade)
+        if after is not None:
+            anim.finished.connect(after)
+        self._anim = anim
+        anim.start()
+
+    def closeEvent(self, event):  # noqa: N802
+        # Closing means hiding (the process is resident): fade out
+        # first, then hide - never a teardown.
+        event.ignore()
+        self.dismiss()
 
     def apply_theme(self):
         name, p = PALETTES[self.theme_idx]
@@ -196,15 +298,19 @@ class RunnerWindow(QDialog):
 
     def mousePressEvent(self, event):  # noqa: N802
         # card widgets handle their own clicks; a press landing on the
-        # dim backdrop closes.
-        if not self.card.geometry().contains(event.position().toPoint()):
+        # dim backdrop closes. The card sits inside the holder, so map
+        # its rect back to window coordinates.
+        card_rect = self.card.geometry().translated(self.card_holder.pos())
+        if not card_rect.contains(event.position().toPoint()):
             self.close()
         else:
             super().mousePressEvent(event)
 
     def paintEvent(self, event):  # noqa: N802
         painter = QPainter(self)
-        painter.fillRect(self.rect(), BACKDROP)
+        backdrop = QColor(BACKDROP)
+        backdrop.setAlpha(round(BACKDROP.alpha() * self._fade))
+        painter.fillRect(self.rect(), backdrop)
         painter.end()
 
     def keyPressEvent(self, event):  # noqa: N802
@@ -323,8 +429,8 @@ class Service(QObject):
 
     def toggle(self):
         win = self._win
-        if win is not None and win.isVisible():
-            win.hide()
+        if win is not None and win.isVisible() and not win._going_out:
+            win.dismiss()
         else:
             self.show_window()
 
