@@ -22,7 +22,7 @@ echo "== personal data =="
 # machine's own config: no host names, no desktop ids, no paths from one
 # person's box.
 if grep -rn --exclude-dir=__pycache__ -iE "([0-9a-f]{2}:){5}[0-9a-f]{2}|/(home|Users)/[^/[:space:]]+|(10|192\.168|172\.(1[6-9]|2[0-9]|3[01]))\.[0-9]{1,3}\.[0-9]{1,3}" \
-    "$SRC" "$PKGDIR/README.md" "$PKGDIR/install.sh" "$PKGDIR/bin" "$PKGDIR/desktop" "$PKGDIR/AGENTS.md" "$PKGDIR/CONTRIBUTING.md" 2>/dev/null \
+    "$SRC" "$PKGDIR/README.md" "$PKGDIR/install.sh" "$PKGDIR/bin" "$PKGDIR/desktop" "$PKGDIR/CONTRIBUTING.md" 2>/dev/null \
     | grep -v "AA:BB:CC:DD:EE:FF"; then
   fail "personal string leaked"
 fi

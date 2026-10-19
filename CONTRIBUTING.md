@@ -1,8 +1,8 @@
 # contributing
 
 small, reviewable changes only - one logical change per pull request.
-split anything that grows into a story. read AGENTS.md first; it applies
-to humans and AI assistants alike. maintained by Maidware Project.
+split anything that grows into a story. read README.md first; it covers
+the project and how it builds. maintained by Maidware Project.
 
 ## commits
 
@@ -30,7 +30,7 @@ to humans and AI assistants alike. maintained by Maidware Project.
 
 ## know your patch
 
-know what every line does, assistant-written ones included. if you can't
+know what every line does. if you can't
 explain it, don't send it.
 
 basic linux expected: the terminal, permissions, sudo, `~/.config`. not an
