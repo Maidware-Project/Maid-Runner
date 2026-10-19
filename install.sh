@@ -36,6 +36,7 @@ if [ "$UNINST" = "1" ]; then
   rm -f "$BINDIR"/maid-runner
   rm -f "$BINDIR"/maid-scroll
   rm -rf "$LIBDIR"/maid-runner
+  rm -rf "$SHAREDIR"/maid-runner
   rm -f "$SHAREDIR"/applications/maid-runner.desktop
   rm -f "$SHAREDIR"/rofi/themes/maid-*.rasi
   if [ "$PURGE" = "1" ]; then
@@ -82,6 +83,14 @@ while IFS= read -r -d '' f; do
 done < <(find maid_runner -name "*.py" -print0)
 copy_one "$PKGDIR/desktop/maid-runner.desktop" \
   "$SHAREDIR/applications/maid-runner.desktop" $REWRITE
+
+# the kdeconnect early-login fix (kernel 7.2.11 / Plasma 6.8) travels
+# with the suite: ~/.local/share/maid-runner/patches/kdeconnect-26.08.2/
+for f in "$PKGDIR"/patches/kdeconnect-26.08.2/*; do
+  [ -f "$f" ] || continue
+  copy_one "$f" "$SHAREDIR/maid-runner/patches/kdeconnect-26.08.2/$(basename "$f")"
+done
+
 [ "$CHECK" = "1" ] && { say "(check only, nothing changed)"; exit 0; }
 
 # --set NAME stores a palette in the Maid Scroll state file (the same
