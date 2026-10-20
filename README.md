@@ -1,9 +1,6 @@
 # Maid Runner - search everything from one key
 
 a launcher and search box (Qt) for kde plasma: a centered search card over a dimmed backdrop. type, hit enter. typing searches every source at once - all applications, the maid suite, files, run, calculator and web - so nothing needs a tab switch first; with the box empty, tab moves between tabs that mirror your app menu (all applications, then the menu's groups: internet, games, multimedia, ...). caps lock cycles the six Maid Scroll palettes. native wayland, no taskbar icon, no accounts, no telemetry.
-
-![](screenshots/maid-runner.png)
-
 ```
 src/maid_runner/             the Qt app (window + one module per source)
 src/maid_runner/palettes.py  the six palettes (Maid Scroll source of truth)
