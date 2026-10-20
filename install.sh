@@ -116,6 +116,8 @@ copy_one "$PKGDIR/desktop/maid-runner.desktop" \
 
 # the kdeconnect early-login fix lives in Maid Helper's `kdeconnect`
 # doctor (maid-helper --only kdeconnect --fix); it is not shipped here.
+# clean a stale patch copy left by older installs
+if [ "$CHECK" = "0" ]; then rm -rf "$SHAREDIR/maid-runner/patches"; fi
 
 [ "$CHECK" = "1" ] && { say "(check only, nothing changed)"; exit 0; }
 
