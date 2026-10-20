@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # Maid Runner installer: Qt search app + six Maid Scroll palettes.
-# Copies files (no symlinks). Usage: ./install.sh [--check]
+# Copies files (no symlinks). Usage: ./install.sh [--check] [--no-packages]
 #   [--set NAME] [--uninstall [--purge]] [--prefix=DIR]
 # --set stores NAME as the active Maid Scroll palette (writes the state
-# file the app and maid-scroll cli read). --prefix installs elsewhere
-# (packaging).
+# file the app and maid-scroll cli read). --no-packages is accepted for
+# suite installs (Runner has no package dependencies). --prefix installs
+# elsewhere (packaging).
 set -u
 PKGDIR="$(cd "$(dirname "$0")" && pwd)"
 BACKUP_TS="$(date +%Y%m%d-%H%M%S)"
@@ -14,7 +15,7 @@ for a in "$@"; do
     --check) CHECK=1 ;;
     --uninstall) UNINST=1 ;;
     --purge) PURGE=1 ;;
-    --no-config) ;;
+    --no-config|--no-packages) ;;
     --prefix=*) PREFIX="${a#--prefix=}" ;;
     --set=*) SET="${a#--set=}" ;;
     --set) SET_NEXT=1 ;;
