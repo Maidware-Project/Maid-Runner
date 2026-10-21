@@ -34,6 +34,10 @@ ACTIONS = [
     ("Maid BT", "Bluetooth status", "Maid BT: state, buds, sink, watcher",
      "bluetooth status state buds",
      ["bluetooth-toggle.sh", "status"], "bluetooth", True),
+    ("Maid BT", "Buds docked?", "Maid BT: are the earbuds in the case? "
+     "(incl. the Watcher's docked state)",
+     "buds case dock charging earbuds watch watcher",
+     ["maid-watcher", "status"], "bluetooth", True),
     # Maid AU - updater
     ("Maid AU", "System update check", "Maid AU: dry run, what would update",
      "update upgrade check system packages",
