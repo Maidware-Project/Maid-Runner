@@ -508,6 +508,35 @@ print("palettes match themes")
 EOF
 ok "palettes match themes"
 
+echo "== palette contrast =="
+PYTHONPATH="$SRC" python3 - <<'EOF' || fail "palette contrast"
+from maid_runner.palettes import PALETTES
+
+def lum(h):
+    h = h.lstrip("#")
+    c = [int(h[i:i + 2], 16) / 255 for i in (0, 2, 4)]
+    c = [x / 12.92 if x <= 0.04045 else ((x + 0.055) / 1.055) ** 2.4 for x in c]
+    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+
+def ratio(a, b):
+    la, lb = lum(a), lum(b)
+    hi, lo = max(la, lb), min(la, lb)
+    return (hi + 0.05) / (lo + 0.05)
+
+bad = []
+for name, p in PALETTES:
+    for fg in ("fg", "muted", "accent"):
+        for bg in ("bg", "bg_alt"):
+            r = ratio(p[fg], p[bg])
+            if r < 4.5:
+                bad.append("%s: %s on %s = %.2f" % (name, fg, bg, r))
+if bad:
+    print("\n".join(bad))
+    raise SystemExit(1)
+print("all palette text pairs clear 4.5:1")
+EOF
+ok "palette contrast"
+
 echo "== offscreen smoke =="
 rm -rf /tmp/mr-xdg2 /tmp/mr-cfg2 /tmp/mr-smokefiles && mkdir -p /tmp/mr-xdg2/applications /tmp/mr-smokefiles
 printf '[Desktop Entry]\nName=Smoke App\nExec=/usr/bin/smoke\nType=Application\n' > /tmp/mr-xdg2/applications/smoke.desktop

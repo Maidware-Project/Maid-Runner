@@ -2,7 +2,7 @@
     bg: #232629;
     bg-alt: #2a2e32;
     fg: #fcfcfc;
-    muted: #7a7e85;
+    muted: #91959a;
     accent: #3daee9;
     accent-dark: #2d96cf;
     background-color: transparent;
