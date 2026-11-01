@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Update Maid Suite
+Comment=Pull every Maid tool from github and redeploy
+Exec=@HOME@/.local/bin/maid-suite-update
+Icon=view-refresh-symbolic
+Terminal=true
+StartupNotify=false
+Type=Application
+Categories=Utility;
+Keywords=update;upgrade;maid;suite;

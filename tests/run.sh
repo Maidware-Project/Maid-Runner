@@ -10,8 +10,8 @@ ok()   { PASS=$((PASS+1)); echo "ok $PASS - $1"; }
 fail() { echo "NOT OK - $1"; exit 1; }
 
 echo "== syntax =="
-bash -n "$PKGDIR"/bin/maid-runner "$PKGDIR"/bin/maid-scroll "$PKGDIR"/install.sh || fail "bash -n"
-command -v shellcheck >/dev/null 2>&1 && shellcheck -S error "$PKGDIR"/bin/maid-runner "$PKGDIR"/bin/maid-scroll "$PKGDIR"/install.sh || true
+bash -n "$PKGDIR"/bin/maid-runner "$PKGDIR"/bin/maid-scroll "$PKGDIR"/bin/maid-suite-update "$PKGDIR"/install.sh || fail "bash -n"
+command -v shellcheck >/dev/null 2>&1 && shellcheck -S error "$PKGDIR"/bin/maid-runner "$PKGDIR"/bin/maid-scroll "$PKGDIR"/bin/maid-suite-update "$PKGDIR"/install.sh || true
 python3 -m py_compile "$SRC"/maid_runner/*.py "$SRC"/maid_runner/sources/*.py || fail "py_compile"
 ok "syntax"
 

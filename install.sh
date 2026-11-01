@@ -66,9 +66,11 @@ say "$(kde_env_line)"
 if [ "$UNINST" = "1" ]; then
   rm -f "$BINDIR"/maid-runner
   rm -f "$BINDIR"/maid-scroll
+  rm -f "$BINDIR"/maid-suite-update
   rm -rf "$LIBDIR"/maid-runner
   rm -rf "$SHAREDIR"/maid-runner
   rm -f "$SHAREDIR"/applications/maid-runner.desktop
+  rm -f "$SHAREDIR"/applications/maid-suite-update.desktop
   rm -f "$SHAREDIR"/rofi/themes/maid-*.rasi
   if [ "$PURGE" = "1" ]; then
     rm -rf "${XDG_CONFIG_HOME:-$HOME/.config}/maid-scroll"
@@ -114,6 +116,14 @@ while IFS= read -r -d '' f; do
 done < <(find maid_runner -name "*.py" -print0)
 copy_one "$PKGDIR/desktop/maid-runner.desktop" \
   "$SHAREDIR/applications/maid-runner.desktop" $REWRITE
+
+# the applications-menu updater: pulls every maid tool from github and
+# redeploys (machinery lives in Maid AU; this only points the menu at
+# it). missing Maid AU says so in the wrapper instead of a dead click.
+copy_one "$PKGDIR/bin/maid-suite-update" "$BINDIR/maid-suite-update"
+[ "$CHECK" = "0" ] && chmod +x "$BINDIR"/maid-suite-update 2>/dev/null || true
+copy_one "$PKGDIR/desktop/maid-suite-update.desktop" \
+  "$SHAREDIR/applications/maid-suite-update.desktop" $REWRITE
 
 # the kdeconnect early-login fix lives in Maid Helper's `kdeconnect`
 # doctor (maid-helper --only kdeconnect --fix); it is not shipped here.

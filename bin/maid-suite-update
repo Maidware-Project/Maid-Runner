@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# menu entry brain: one click in the applications menu updates the whole
+# maid suite (pulls every family repo from github and redeploys).
+# the updater itself is Maid AU's update-all.sh - this wrapper only
+# makes the menu path honest: it fails loud when Maid AU is missing,
+# defaults to a full run (not just --check), and keeps the terminal
+# open long enough to read the result.
+set -u
+UPD="$HOME/.local/bin/update-all.sh"
+if [ ! -x "$UPD" ]; then
+  echo "update-all.sh not found - the suite updater ships with Maid AU."
+  echo "install it from github.com/Maidware-Project/Maid-AU first."
+  if [ -t 0 ]; then
+    sleep 4
+  fi
+  exit 2
+fi
+# menu click = do the update now: pull code and rerun each installer.
+# power users can still call update-all.sh --check directly.
+export UPDATE_MAID_DEPLOY="${UPDATE_MAID_DEPLOY:-1}"
+"$UPD" "$@"
+rc=$?
+echo
+if [ "$rc" = "0" ]; then
+  echo "maid suite updated. you can close this window."
+else
+  echo "maid suite update finished with problems (rc=$rc) - scroll up."
+
+fi
+if [ -t 0 ] && [ "${MAID_KEEP:-1}" = "1" ]; then
+  read -r -p "press enter to close... " _ || true
+fi
+exit "$rc"

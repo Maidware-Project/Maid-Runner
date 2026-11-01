@@ -15,11 +15,15 @@ install.sh                   installer (files only, no packages)
 ## quick start
 
 ```sh
-bash install.sh            # app + palettes + launcher
+bash install.sh            # app + palettes + launcher + menu entry
 ```
 
 bind `maid-runner --toggle` to a key (below), or run it from your
-apps menu - it *is* an application entry itself.
+apps menu - it *is* an application entry itself. the installer also
+drops an **update maid suite** entry into the applications menu
+(`maid-suite-update`): one click pulls every maid tool from github
+and redeploys them. the machinery is Maid AU's `update-all.sh`; if
+Maid AU is missing the click says so instead of failing silently.
 
 ## keybinding 
 
