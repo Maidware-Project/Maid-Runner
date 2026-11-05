@@ -109,16 +109,43 @@ def pick_terminal():
     return None
 
 
+def user_shell():
+    """The shell the person actually uses, not the terminal's default: $SHELL when it is set and really exists,
+    else the passwd entry, then bash, then /bin/sh. None when nothing on this machine qualifies, so callers
+    keep their old behaviour instead of wrapping a command in a shell that is not there."""
+    cands = []
+    env_shell = os.environ.get("SHELL", "").strip()
+    if env_shell:
+        cands.append(env_shell)
+    try:
+        import pwd
+
+        cands.append(pwd.getpwuid(os.getuid()).pw_shell)
+    except (ImportError, KeyError, OSError):
+        pass
+    cands += ["/bin/bash", "/bin/sh"]
+    for shell in cands:
+        if shell and os.path.isfile(shell) and os.access(shell, os.X_OK):
+            return shell
+    return None
+
+
 def launch(argv, terminal=False):
-    """Run detached. terminal=True wraps in the user's terminal."""
+    """Run detached. terminal=True wraps in the user's terminal — and, when one exists, in the user's own shell
+    (fish, zsh, bash, whatever $SHELL or passwd says), so the window the person sees is their own shell."""
+    if isinstance(argv, str):
+        argv = shlex.split(argv)
     if terminal:
         term = pick_terminal()
         if term is None:
             return False
-        argv = term + [a for a in argv]
-    else:
-        if isinstance(argv, str):
-            argv = shlex.split(argv)
+        shell = user_shell()
+        if shell and argv:
+            argv = term + [shell, "-c", " ".join(shlex.quote(a) for a in argv)]
+        elif shell:
+            argv = term + [shell]
+        else:
+            argv = term + list(argv)
     try:
         subprocess.Popen(argv, start_new_session=True,
                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)

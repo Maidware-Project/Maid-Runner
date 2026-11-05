@@ -199,6 +199,80 @@ print("terminal picker passed")
 EOF
 ok "terminal picker"
 
+echo "== user shell =="
+# Hermetic again: a scratch PATH so pick lands on the fake ghostty, and
+# $SHELL pointing at a fake shell of our own.
+PYTHONPATH="$SRC" python3 - <<'EOF' || fail "user shell"
+import os
+from maid_runner.sources import base
+
+D = "/tmp/mr-shell"
+orig_path = os.environ.get("PATH")
+orig_term = os.environ.get("TERMINAL")
+orig_shell = os.environ.get("SHELL")
+orig_popen = base.subprocess.Popen
+
+
+def _reset(bins):
+    os.system("rm -rf " + D)
+    os.makedirs(D)
+    for name, body in bins:
+        p = os.path.join(D, name)
+        with open(p, "w") as f:
+            f.write(body)
+        os.chmod(p, 0o755)
+
+
+SH = "#!/bin/sh\nexit 0\n"
+MYSH = os.path.join(D, "mysh")
+captured = []
+
+
+class FakePopen:
+    def __init__(self, argv, **kw):
+        captured.append(list(argv))
+
+
+try:
+    _reset([("ghostty", SH), ("mysh", SH)])
+    os.environ["PATH"] = D
+    os.environ.pop("TERMINAL", None)
+    os.environ["SHELL"] = MYSH
+    assert base.user_shell() == MYSH
+    base.subprocess.Popen = FakePopen
+    # the picked terminal and, inside it, the shell the person uses
+    assert base.launch(["htop"], terminal=True) is True
+    assert captured[-1] == ["ghostty", "-e", MYSH, "-c", "htop"]
+    assert base.launch(["echo", "a b;c"], terminal=True) is True
+    assert captured[-1] == ["ghostty", "-e", MYSH, "-c", "echo 'a b;c'"]
+    # a bare terminal still opens the person's shell
+    assert base.launch([], terminal=True) is True
+    assert captured[-1] == ["ghostty", "-e", MYSH]
+    # with no $SHELL, the passwd entry answers (and launch uses it too)
+    os.environ.pop("SHELL")
+    shell = base.user_shell()
+    assert shell and os.path.isabs(shell)
+    assert base.launch(["htop"], terminal=True) is True
+    assert captured[-1] == ["ghostty", "-e", shell, "-c", "htop"]
+finally:
+    if orig_path is not None:
+        os.environ["PATH"] = orig_path
+    else:
+        os.environ.pop("PATH", None)
+    if orig_term is None:
+        os.environ.pop("TERMINAL", None)
+    else:
+        os.environ["TERMINAL"] = orig_term
+    if orig_shell is None:
+        os.environ.pop("SHELL", None)
+    else:
+        os.environ["SHELL"] = orig_shell
+    base.subprocess.Popen = orig_popen
+    os.system("rm -rf " + D)
+print("user shell passed")
+EOF
+ok "user shell"
+
 echo "== resident toggle channel =="
 rm -rf /tmp/mr-run && mkdir -p /tmp/mr-run
 XDG_RUNTIME_DIR=/tmp/mr-run PYTHONPATH="$SRC" python3 - <<'EOF' || fail "toggle channel"
