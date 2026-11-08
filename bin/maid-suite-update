@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 # menu entry brain: one click in the applications menu updates the whole
 # maid suite (pulls every family repo from github and redeploys).
-# the updater itself is Maid AU's update-all.sh - this wrapper only
-# makes the menu path honest: it fails loud when Maid AU is missing,
-# defaults to a full run (not just --check), and keeps the terminal
-# open long enough to read the result.
+# the updater machinery is update-all.sh (provided by Maid Suite, the
+# canonical front end). this wrapper makes the menu path honest: it
+# fails loud when the updater is missing, defaults to a full run (not
+# just --check), and keeps the terminal open long enough to read the result.
 set -u
 UPD="$HOME/.local/bin/update-all.sh"
 if [ ! -x "$UPD" ]; then
-  echo "update-all.sh not found - the suite updater ships with Maid AU."
-  echo "install it from github.com/Maidware-Project/Maid-AU first."
+  echo "update-all.sh not found - the suite updater is provided by Maid Suite."
+  echo "install it: https://github.com/Maidware-Project/Maid-Suite"
   if [ -t 0 ]; then
     sleep 4
   fi
