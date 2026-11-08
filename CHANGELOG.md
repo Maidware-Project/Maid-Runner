@@ -1,10 +1,11 @@
 # changelog
 
-## unreleased
+## Maid Runner v1.1.0 (this release)
 
-- **relicensed to GPL-3.0-or-later** (forkable, open source). Third-party components retain their own licenses.
+- **NixOS (flakes + home-manager), easy setup:** `flake.nix` with packages/app, `homeManagerModules.default`/`nixosModules.default`, and `programs.maid-runner.enable`. track `main` and rebuild with `--refresh` to auto-update on every rebuild/switch.
+- Maid actions labeled **Maid Suite** (replaces archived AU/Helper naming), shown only for installed capabilities (independence preserved).
 
-## Maid Runner v1.0 (this release)
+## Maid Runner v1.0
 
 added:
 - the launcher, stable: type once, every source answers at the same
