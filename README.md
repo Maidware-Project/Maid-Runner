@@ -156,6 +156,16 @@ upgrade, log out and back in before trusting the session. Systemd
 restarts plasmashell in about a second, but that restart alone leaves
 part of the desktop on old libraries while the rest rides new ones.
 
+## NixOS (flakes & home-manager)
+
+a `flake.nix` is provided:
+
+```sh
+nix run github:Maidware-Project/Maid-Runner
+```
+
+home-manager: enable `programs.maid-runner.enable = true;` via the flake’s `homeManagerModules.default`. bind `maid-runner --toggle` in your compositor/desktop (e.g. Plasma shortcuts, Hyprland/Sway binds) - the repo never sets keybinds.
+
 ## uninstall
 
 ```sh
