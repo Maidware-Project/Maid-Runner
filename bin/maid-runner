@@ -15,7 +15,7 @@ session_doctor() {
   echo "  WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-}  DISPLAY=${DISPLAY:-}"
   case "${XDG_CURRENT_DESKTOP:-} ${XDG_SESSION_DESKTOP:-}" in
     *[Pp]lasma*|*[Kk][Dd][Ee]*) echo "  support: KDE Plasma path expected (supported). Bind key via Plasma shortcuts (see README)." ;;
-    *[Hh]yprland*|*[Ss]way*|*[Ii]3*) echo "  support: Qt runner works on Wayland/X11; compositor keybind/integration is partial/experimental (roadmap). Bind maid-runner/--toggle in your compositor config." ;;
+    *[Hh]yprland*|*[Ss]way*|*[Ii]3*) echo "  support: Qt runner works on Wayland/X11; compositor keybind/integration is partial/experimental (iterative). Bind maid-runner/--toggle in your compositor config." ;;
     *) echo "  support: core app needs a display; integration varies by desktop/compositor." ;;
   esac
 }
