@@ -38,15 +38,15 @@ ACTIONS = [
      "(incl. the Watcher's docked state)",
      "buds case dock charging earbuds watch watcher",
      ["maid-watcher", "status"], "bluetooth", True),
-    # Maid AU - updater
-    ("Maid AU", "System update check", "Maid AU: dry run, what would update",
-     "update upgrade check system packages",
+    # Maid Suite - updater (embedded AU core)
+    ("Maid Suite", "System update check", "Maid Suite: dry run, what would update",
+     "update upgrade check system packages maid suite au",
      ["update-all.sh", "--check"], "software-update-available", True),
-    ("Maid AU", "System update", "Maid AU: full run (snapshots first)",
-     "update upgrade system packages reboot",
+    ("Maid Suite", "System update", "Maid Suite: full run (snapshots first)",
+     "update upgrade system packages reboot maid suite",
      ["update-all.sh"], "software-update-available", True),
-    ("Maid AU", "Last update", "Maid AU: when the last good run happened",
-     "update last history log",
+    ("Maid Suite", "Last update", "Maid Suite: when the last good run happened",
+     "update last history log maid suite",
      ["update-all.sh", "--last"], "software-update-available", True),
     # Maidshare - phone sharing
     ("Maidshare", "Share to phone", "Maidshare: pick a file, auto backend",
@@ -55,12 +55,12 @@ ACTIONS = [
     ("Maidshare", "Receive from phone", "Maidshare: QR upload, browser, token URL",
      "share receive phone upload qr",
      ["maidshare", "--receive"], "kdeconnect", True),
-    # Maid Helper - first aid
-    ("Maid Helper", "System check", "Maid Helper: read-only health report",
-     "doctor fix help check health codecs gpu printer fonts",
+    # Maid Suite - first aid (embedded Helper core)
+    ("Maid Suite", "System check", "Maid Suite: read-only health report",
+     "doctor fix help check health codecs gpu printer fonts maid suite",
      ["maid-helper", "--check"], "maid-helper", True),
-    ("Maid Helper", "Fix my system", "Maid Helper: apply safe fixes",
-     "doctor fix help repair update",
+    ("Maid Suite", "Fix my system", "Maid Suite: apply safe fixes",
+     "doctor fix help repair update maid suite",
      ["maid-helper", "--fix"], "maid-helper", True),
 ]
 

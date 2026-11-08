@@ -16,12 +16,11 @@ import shutil
 BIN = (os.environ.get("MAID_RUNNER_BIN")
        or os.path.join(os.path.expanduser("~"), ".local", "bin"))
 
-# tool name -> the command that proves it is installed
+# tool name -> command(s) that prove it is installed (any match)
 TOOLS = {
-    "Maid BT": "bluetooth-toggle.sh",
-    "Maid AU": "update-all.sh",
-    "Maidshare": "maidshare",
-    "Maid Helper": "maid-helper",
+    "Maid BT": ("bluetooth-toggle.sh",),
+    "Maidshare": ("maidshare",),
+    "Maid Suite": ("maid-suite", "update-all.sh", "maid-helper"),
 }
 
 
@@ -39,8 +38,11 @@ def resolve(command):
 
 
 def installed(tool):
-    """True when the tool's command is in our bin dir or on PATH."""
-    return resolve(TOOLS[tool]) is not None
+    """True when any of the tool's commands is in our bin dir or on PATH."""
+    cmds = TOOLS[tool]
+    if isinstance(cmds, str):
+        cmds = (cmds,)
+    return any(resolve(c) is not None for c in cmds)
 
 
 def installed_tools():
