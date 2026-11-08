@@ -7,7 +7,19 @@
 # suite installs (Runner has no package dependencies). --prefix installs
 # elsewhere (packaging).
 set -u
-PKGDIR="$(cd "$(dirname "$0")" && pwd)"
+PKGDIR="$(cd "$(dirname "$0")" && pwd)" 2>/dev/null || PKGDIR=""
+if [ ! -f "$PKGDIR/install.sh" ]; then
+  # piped install (bash <(curl -fsSL ...)): the script is a /dev/fd
+  # stream, so there is no package tree next to it. Fetch the repo
+  # tarball and continue from there.
+  FETCH_TMP="$(mktemp -d /tmp/maidrunner-fetch.XXXXXX)"
+  trap 'rm -rf "$FETCH_TMP"' INT TERM
+  curl -fsSL "https://github.com/Maidware-Project/Maid-Runner/archive/refs/heads/main.tar.gz" -o "$FETCH_TMP/repo.tgz" \
+    || { echo "could not download the Maid Runner package tree" >&2; exit 1; }
+  tar -xzf "$FETCH_TMP/repo.tgz" -C "$FETCH_TMP" || exit 1
+  PKGDIR="$(find "$FETCH_TMP" -mindepth 1 -maxdepth 1 -type d -name 'Maid-Runner-*' | head -n 1)"
+  [ -f "$PKGDIR/install.sh" ] || { echo "downloaded tree looks wrong" >&2; exit 1; }
+fi
 BACKUP_TS="$(date +%Y%m%d-%H%M%S)"
 CHECK=0; UNINST=0; PURGE=0; PREFIX=""; SET=""
 for a in "$@"; do

@@ -15,6 +15,9 @@ install.sh                   installer (files only, no packages)
 ## quick start
 
 ```sh
+# one line, straight from GitHub:
+bash <(curl -fsSL https://raw.githubusercontent.com/Maidware-Project/Maid-Runner/main/install.sh)
+
 bash install.sh            # app + palettes + launcher + menu entry
 ```
 
