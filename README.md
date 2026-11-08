@@ -158,13 +158,18 @@ part of the desktop on old libraries while the rest rides new ones.
 
 ## NixOS (flakes & home-manager)
 
-a `flake.nix` is provided:
+```nix
+# flake.nix (your config)
+inputs.maid-runner.url = "github:Maidware-Project/Maid-Runner"; # tracks main
 
-```sh
-nix run github:Maidware-Project/Maid-Runner
+# home-manager
+imports = [ inputs.maid-runner.homeManagerModules.default ];
+programs.maid-runner.enable = true;
 ```
 
-home-manager: enable `programs.maid-runner.enable = true;` via the flake’s `homeManagerModules.default`. bind `maid-runner --toggle` in your compositor/desktop (e.g. Plasma shortcuts, Hyprland/Sway binds) - the repo never sets keybinds.
+**auto-update on every rebuild/switch:** track `main` and rebuild with refresh: `nix flake update maid-runner && home-manager switch --flake .#<user>` (or `sudo nixos-rebuild switch --flake .#<host> --refresh`).
+
+bind `maid-runner --toggle` in your compositor/desktop (Plasma shortcuts, Hyprland/Sway binds). quick try: `nix run github:Maidware-Project/Maid-Runner`.
 
 ## uninstall
 
