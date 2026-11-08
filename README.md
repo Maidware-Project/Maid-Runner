@@ -165,4 +165,4 @@ your Maid Scroll state is left in `~/.config/maid-scroll/`.
 
 ## License
 
-MIT - see LICENSE. a Maidware Project, Forkable open source tools served to help
+GPL-3.0-or-later — forkable and open source. See `LICENSE`. Part of the Maidware Project
