@@ -22,12 +22,20 @@
             dontBuild = true;
             installPhase = ''
               runHook preInstall
-              mkdir -p $out/bin $out/lib/maid-runner $out/share/maid-runner $out/share/applications
+              mkdir -p $out/bin $out/lib/maid-runner $out/share/maid-runner $out/share/applications $out/libexec/maid-runner
               cp -a src/maid_runner $out/lib/maid-runner/
               cp -a bin/maid-runner bin/maid-scroll $out/bin/ 2>/dev/null || true
               chmod +x $out/bin/maid-runner $out/bin/maid-scroll 2>/dev/null || true
+              if [ -f bin/maid-suite-update ]; then
+                cp -a bin/maid-suite-update $out/libexec/maid-runner/maid-suite-update
+                chmod +x $out/libexec/maid-runner/maid-suite-update
+                makeWrapper $out/libexec/maid-runner/maid-suite-update $out/bin/maid-suite-update --prefix PATH : ${runtimePath}
+              fi
               [ -d desktop ] && cp -a desktop/*.desktop $out/share/applications/ 2>/dev/null || true
               [ -d themes ] && cp -a themes $out/share/maid-runner/themes 2>/dev/null || true
+              find $out/share/applications -name '*.desktop' -type f 2>/dev/null | while IFS= read -r f; do
+                sed -i "s|@HOME@/.local/bin/||g; s|@HOME@|$HOME|g" "$f"
+              done
               cp -a README.md LICENSE THIRD-PARTY-NOTICES.md $out/share/maid-runner/ 2>/dev/null || true
               wrapProgram $out/bin/maid-runner --prefix PATH : ${runtimePath}:${py}/bin --set PYTHONPATH $out/lib/maid-runner
               [ -f $out/bin/maid-scroll ] && wrapProgram $out/bin/maid-scroll --prefix PATH : ${runtimePath}:${py}/bin --set PYTHONPATH $out/lib/maid-runner || true
