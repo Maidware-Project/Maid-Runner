@@ -1,6 +1,10 @@
 # changelog
 
-## Maid Runner v1.1.0 (this release)
+## Maid Runner v1.1.1 (this release)
+
+- Installers: fetch package/updates from the latest GitHub release (fallback to main if unavailable).
+
+## Maid Runner v1.1.0
 
 - **NixOS (flakes + home-manager), easy setup:** `flake.nix` with packages/app, `homeManagerModules.default`/`nixosModules.default`, and `programs.maid-runner.enable`. track `main` and rebuild with `--refresh` to auto-update on every rebuild/switch.
 - Maid actions labeled **Maid Suite** (replaces archived AU/Helper naming), shown only for installed capabilities (independence preserved).
