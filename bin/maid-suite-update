@@ -10,6 +10,7 @@ UPD="$HOME/.local/bin/update-all.sh"
 if [ ! -x "$UPD" ]; then
   echo "update-all.sh not found - the suite updater is provided by Maid Suite."
   echo "install it: https://github.com/Maidware-Project/Maid-Suite"
+  echo "fallback:  https://codeberg.org/Maidware_Project/Maid-Suite"
   if [ -t 0 ]; then
     sleep 4
   fi

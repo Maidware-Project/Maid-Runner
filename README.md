@@ -21,6 +21,12 @@ bash <(curl -fsSL https://raw.githubusercontent.com/Maidware-Project/Maid-Runner
 bash install.sh            # app + palettes + launcher + menu entry
 ```
 
+**fallback (if GitHub is unavailable):**
+```sh
+bash <(curl -fsSL https://codeberg.org/Maidware_Project/Maid-Runner/raw/branch/main/install.sh)
+# clone: git clone --depth 1 https://codeberg.org/Maidware_Project/Maid-Runner.git
+```
+
 bind `maid-runner --toggle` to a key (below), or run it from your
 apps menu - it *is* an application entry itself. the installer also
 drops an **update maid suite** entry into the applications menu
