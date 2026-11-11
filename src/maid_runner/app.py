@@ -138,7 +138,9 @@ class RunnerWindow(QDialog):
             pos = next((i for i, s in enumerate(self.sources)
                         if s.name == "Development"), len(self.sources))
             self.sources.insert(pos, MaidSource())
-        self.sources += [FilesSource(self._files), RunSource(apps),
+        # Start file indexing after the window is shown so opening is not
+        # delayed by kicking off a home-directory scan.
+        self.sources += [FilesSource(self._files, start=False), RunSource(apps),
                          CalcSource(), WebSource()]
         self.source_idx = 0
         self.theme_idx = index_of(load())
@@ -227,6 +229,9 @@ class RunnerWindow(QDialog):
 
     def pop_up(self):
         """Bring the window up ready for typing (the keybind path)."""
+        # Index files in the background after the UI is up so opening
+        # stays responsive; refresh() is a no-op if a scan ran recently.
+        self._files.start()
         self._files.refresh()
         if self.search.text():
             self.search.clear()  # textChanged refreshes the list
@@ -256,9 +261,18 @@ class RunnerWindow(QDialog):
         self._going_out = False
         if getattr(self, "_quit_after", False):
             self._quit_after = False
+            # Prefer idle-quit so quick reopens stay fast, but do not keep
+            # the process resident forever (releases memory when unused).
             app = QApplication.instance()
             if app is not None:
-                app.quit()
+                # If running as a service, schedule idle quit; fallback quit.
+                svc = getattr(app, "_maid_service", None)
+                if svc is not None:
+                    svc._schedule_idle_quit()
+                else:
+                    # No service wrapper: quit soon to free memory.
+                    from PyQt6.QtCore import QTimer
+                    QTimer.singleShot(120000, app.quit)
 
     def _set_fade(self, value):
         """One frame of the fade: backdrop alpha + card opacity."""
@@ -465,11 +479,26 @@ class Service(QObject):
         self._listener = listener
         self._win = None
         self._files = FileIndex()
-        self._files.start()
         self._notifier = QSocketNotifier(listener.fileno(),
                                          QSocketNotifier.Type.Read, self)
         self._notifier.activated.connect(self._accept)
+        self._idle_timer = None
         app.aboutToQuit.connect(self._close)
+
+    def _cancel_idle_quit(self):
+        if self._idle_timer is not None:
+            self._idle_timer.stop()
+            self._idle_timer = None
+
+    def _schedule_idle_quit(self, ms=120000):
+        """Quit after inactivity so memory is freed, but keep the
+        process around briefly for fast repeated opens."""
+        self._cancel_idle_quit()
+        from PyQt6.QtCore import QTimer
+        self._idle_timer = QTimer(self)
+        self._idle_timer.setSingleShot(True)
+        self._idle_timer.timeout.connect(self._app.quit)
+        self._idle_timer.start(ms)
 
     def window(self):
         if self._win is None:
@@ -477,6 +506,7 @@ class Service(QObject):
         return self._win
 
     def show_window(self):
+        self._cancel_idle_quit()
         self.window().pop_up()
 
     def toggle(self):
@@ -572,8 +602,11 @@ def main(argv=None):
         app.setStyle(fusion)
 
     service = Service(app, listener)
+    app._maid_service = service
     if mode != "service":
         service.show_window()
+    else:
+        service._schedule_idle_quit()
     return app.exec()
 
 

@@ -103,8 +103,13 @@ class FilesSource:
     name = "Files"
     show_subtitles = True
 
-    def __init__(self, index=None):
+    def __init__(self, index=None, start=True):
         self._index = index if index is not None else FileIndex()
+        if start:
+            self._index.start()
+
+    def start(self):
+        """Begin indexing in the background (deferred/lazy startup)."""
         self._index.start()
 
     def _rank(self, query, path):
