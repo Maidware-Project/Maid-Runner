@@ -147,6 +147,7 @@ class RunnerWindow(QDialog):
         # 1.0 is the resting state and carries no effect at all.
         self._fade = 1.0
         self._going_out = False
+        self._quit_after = False
         self._anim = None
 
         root = QVBoxLayout(self)
@@ -238,16 +239,26 @@ class RunnerWindow(QDialog):
         self.search.setFocus()
         self._animate(1.0, FADE_IN_MS)
 
-    def dismiss(self):
-        """Fade the window out, then hide it."""
+    def dismiss(self, quit_after=False):
+        """Fade the window out, then hide it. quit_after exits the app."""
         if not self.isVisible() or self._going_out:
+            if quit_after:
+                app = QApplication.instance()
+                if app is not None:
+                    app.quit()
             return
         self._going_out = True
+        self._quit_after = quit_after
         self._animate(0.0, FADE_OUT_MS, after=self._hide_now)
 
     def _hide_now(self):
         self.hide()
         self._going_out = False
+        if getattr(self, "_quit_after", False):
+            self._quit_after = False
+            app = QApplication.instance()
+            if app is not None:
+                app.quit()
 
     def _set_fade(self, value):
         """One frame of the fade: backdrop alpha + card opacity."""
@@ -268,6 +279,8 @@ class RunnerWindow(QDialog):
     def _animate(self, to, base_ms, after=None):
         if self._anim is not None:
             self._anim.stop()
+            self._anim.deleteLater()
+            self._anim = None
         ms = animation_duration(base_ms)
         if ms <= 0:  # animations turned off in the desktop's settings
             self._set_fade(to)
@@ -288,10 +301,11 @@ class RunnerWindow(QDialog):
         anim.start()
 
     def closeEvent(self, event):  # noqa: N802
-        # Closing means hiding (the process is resident): fade out
-        # first, then hide - never a teardown.
+        # Closing means the user is done: fade out, then quit so the
+        # process does not linger resident and hold memory. The next
+        # hotkey invocation starts a fresh instance.
         event.ignore()
-        self.dismiss()
+        self.dismiss(quit_after=True)
 
     def apply_theme(self):
         name, p = PALETTES[self.theme_idx]
@@ -397,6 +411,14 @@ class RunnerWindow(QDialog):
         else:
             self.source_label.setText(src.name)
             self.rows = [(*row, src) for row in src.items(query)]
+        # Rebuild the visible rows; drop old item widgets so repeated
+        # searches do not accumulate them in memory.
+        while self.list.count():
+            item = self.list.takeItem(0)
+            w = self.list.itemWidget(item)
+            if w is not None:
+                w.deleteLater()
+            del item
         self.list.clear()
         for title, sub, icon, _payload, row_src in self.rows[:40]:
             if SUBTITLE_MODE == "all":
@@ -423,7 +445,9 @@ class RunnerWindow(QDialog):
         if 0 <= row < len(self.rows):
             _t, _s, _icon, payload, row_src = self.rows[row]
             if row_src.activate(payload):
-                self.close()
+                # Launch is handed off; quit so the process does not linger
+                # resident and hold memory after the user is done with it.
+                self.dismiss(quit_after=True)
 
 
 class Service(QObject):
