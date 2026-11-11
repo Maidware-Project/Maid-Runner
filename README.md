@@ -35,6 +35,13 @@ and redeploys them. the machinery is the Maid updater (`update-all.sh`,
 as provided by [Maid Suite](https://github.com/Maidware-Project/Maid-Suite));
 if the updater is missing the click says so instead of failing silently.
 
+## currently supported
+
+- **Desktop environments:** KDE Plasma (supported), GNOME, XFCE, MATE, Cinnamon, LXQt
+- **Window managers / compositors:** Hyprland, Sway, i3 (Wayland/X11 as applicable)
+- **Desktop shells / environments:** <!-- # this is truly my power --> [Event Horizon](https://github.com/Event-Horizon-desktop-environment/Event-Horizon) is recognized/detected
+- **Core:** Qt app, needs a display (Wayland or X11). Bind `maid-runner --toggle` in your environment's shortcut/keybind settings (e.g. Plasma Shortcuts, GNOME/XFCE/MATE/Cinnamon/LXQt keyboard settings, Hyprland/Sway/i3 config). Installer and `maid-runner --doctor` report detected session/DE/WM.
+
 ## keybinding 
 
 the repo never sets keybinds - that's personal config and stays on
