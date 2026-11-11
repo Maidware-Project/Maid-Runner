@@ -12,7 +12,6 @@ Provided by your system/distribution:
 ## Desktop integration (referenced, not bundled)
 - **XDG Desktop Entry / icon themes** conventions (freedesktop.org specifications) — followed for launchers; no freedesktop code bundled.
 - **KDE Plasma / KWin**, **GNOME**, **XFCE**, **MATE**, **Cinnamon**, **LXQt**, **Hyprland**, **Sway**, **i3** — recognized/supported desktop environments, window managers, and compositors (integration varies; keybinds/shortcuts configured in the environment). No compositor/DE code is bundled.
-- **[GPUIShell (gpuishell)](https://git.rond.cc/rond/gpui-shell)** (rond.cc / Andre Brandao) — external Wayland desktop shell; recognized/detected when running. Not bundled; no code copied.
 - **[Event Horizon](https://github.com/Event-Horizon-desktop-environment/Event-Horizon)** — external Wayland desktop shell/environment; recognized/detected when running. Not bundled; no code copied.
 
 Everything else in this repository is original Maidware work. Corrections welcome.
