@@ -13,6 +13,7 @@ Provided by your system/distribution:
 - **XDG Desktop Entry / icon themes** conventions (freedesktop.org specifications) — followed for launchers; no freedesktop code bundled.
 - **KDE Plasma / KWin**, **GNOME**, **XFCE**, **MATE**, **Cinnamon**, **LXQt**, **Hyprland**, **Sway**, **i3** — recognized/supported desktop environments, window managers, and compositors (integration varies; keybinds/shortcuts configured in the environment). No compositor/DE code is bundled.
 - **[Event Horizon](https://github.com/Event-Horizon-desktop-environment/Event-Horizon)** — external Wayland desktop shell/environment; recognized/detected when running. Not bundled; no code copied.
+- **[KineticWE](https://gitlab.com/theblackdon/kineticwe)** (theblackdon / KineticWE project) — external KWin-based Wayland compositor/session; recognized/detected when running. Not bundled; no code copied.
 
 ## Void Linux / community repositories (referenced, not bundled)
 - **[oco (vOid Community repOsitory)](https://codeberg.org/oSoWoSo/oco)** (oSoWoSo) — Void Linux xbps-src templates/community binary repository (`https://repo.osowoso.org`); referenced for Void Linux package availability/support. Not bundled.
