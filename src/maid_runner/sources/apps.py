@@ -9,7 +9,9 @@ first.
 
 import configparser
 import os
+import re
 import shlex
+import shutil
 
 from .base import app_dirs, launch, pick_terminal
 
@@ -88,6 +90,8 @@ def _parse_desktop(path):
         if shutil.which(e["TryExec"].strip()) is None:
             return None
     tokens = {t.strip() for t in (e.get("Categories") or "").split(";") if t.strip()}
+    desktop_file = os.path.abspath(path)
+    desktop_id = os.path.splitext(os.path.basename(path))[0]
     return {
         "name": name,
         "generic": _unescape(e.get("GenericName") or "").strip(),
@@ -96,6 +100,8 @@ def _parse_desktop(path):
         "icon": _unescape(e.get("Icon") or "").strip(),
         "exec": exec_line,
         "terminal": e.get("Terminal", "false").lower() == "true",
+        "desktop_file": desktop_file,
+        "desktop_id": desktop_id,
         "buckets": frozenset(name for name, cats in CATEGORY_TOKENS
                              if tokens & set(cats)),
     }
@@ -103,8 +109,39 @@ def _parse_desktop(path):
 
 def _clean_exec(exec_line):
     # strip freedesktop field codes (%f %F %u %U %i %c %k %d %D %n %N %v %m)
-    import re
     return re.sub(r"\s*%[fFuUickdDnNvm]", "", exec_line).strip()
+
+
+def _launch_desktop_entry(app):
+    """Launch an app via its desktop entry like an application menu would."""
+    desktop_id = app.get("desktop_id") or ""
+    desktop_file = app.get("desktop_file") or ""
+
+    # Prefer desktop-entry launchers so DBus activation, env, StartupWMClass,
+    # terminal handling, etc. match the system app launcher behavior.
+    if desktop_id and shutil.which("gio"):
+        if launch(["gio", "launch", desktop_id]):
+            return True
+        if desktop_file and launch(["gio", "launch", desktop_file]):
+            return True
+    if desktop_id and shutil.which("gtk-launch"):
+        if launch(["gtk-launch", desktop_id]):
+            return True
+    if desktop_file:
+        for cmd in ("kioclient5", "kioclient", "kioclient6"):
+            if shutil.which(cmd) and launch([cmd, "exec", desktop_file]):
+                return True
+
+    # Fallback: parse Exec (may not preserve all launcher/wrapper semantics).
+    argv = shlex.split(_clean_exec(app.get("exec") or ""))
+    if not argv:
+        return False
+    if app.get("terminal"):
+        term = pick_terminal()
+        if term is None:
+            return False
+        argv = term + argv
+    return launch(argv)
 
 
 def _rank(query, app):
@@ -185,12 +222,4 @@ class AppsSource:
         return [(a["name"], a["generic"] or a["comment"], a["icon"], a) for _, _, a in scored]
 
     def activate(self, app):
-        argv = shlex.split(_clean_exec(app["exec"]))
-        if not argv:
-            return False
-        if app["terminal"]:
-            term = pick_terminal()
-            if term is None:
-                return False
-            argv = term + argv
-        return launch(argv)
+        return _launch_desktop_entry(app)
