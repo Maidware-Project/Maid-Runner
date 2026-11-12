@@ -10,8 +10,14 @@ desktop entry is the authority; unknown binaries keep the terminal.
 import os
 import shlex
 
-from .apps import _clean_exec, load_apps
+from .apps import _clean_exec, _launch_desktop_entry, load_apps
 from .base import launch
+
+
+def _is_internal_binary(name):
+    # NixOS and similar setups expose internal wrapper targets (e.g.
+    # .foo-wrapped, foo-wrapped); never show/run them directly.
+    return name.startswith(".") or name.endswith("-wrapped") or ".-wrapped" in name
 
 
 def _binaries():
@@ -25,7 +31,7 @@ def _binaries():
         except OSError:
             continue
         for n in names:
-            if n in seen or n.startswith("."):
+            if n in seen or _is_internal_binary(n):
                 continue
             p = os.path.join(d, n)
             if os.path.isfile(p) and os.access(p, os.X_OK):
@@ -34,20 +40,25 @@ def _binaries():
     return sorted(out)
 
 
-def _gui_wants(apps):
-    """Binary name -> the desktop entry's Terminal= flag.
+def _app_index(apps):
+    """Binary name -> desktop app, and binary name -> Terminal flag.
 
     First entry wins, the same order the menu itself loads them in.
     """
-    out = {}
+    by_bin = {}
+    terminal = {}
     for app in apps:
         argv = shlex.split(_clean_exec(app["exec"]))
         if not argv:
             continue
         name = os.path.basename(argv[0])
-        if name and name not in out:
-            out[name] = app["terminal"]
-    return out
+        if not name:
+            continue
+        if name not in by_bin:
+            by_bin[name] = app
+        if name not in terminal:
+            terminal[name] = app["terminal"]
+    return by_bin, terminal
 
 
 class RunSource:
@@ -56,7 +67,7 @@ class RunSource:
 
     def __init__(self, apps=None):
         self._bins = _binaries()
-        self._terminal = _gui_wants(load_apps() if apps is None else apps)
+        self._app_by_bin, self._terminal = _app_index(load_apps() if apps is None else apps)
 
     def items(self, query):
         q = (query or "").strip()
@@ -85,6 +96,13 @@ class RunSource:
 
     def activate(self, payload):
         b, rest = payload
+        # If a GUI desktop app owns this command, launch it like the
+        # application menu (desktop entry) instead of running/wrapping the
+        # raw binary directly.
+        if not rest:
+            app = self._app_by_bin.get(b)
+            if app and not app.get("terminal"):
+                return _launch_desktop_entry(app)
         try:
             argv = [b] + shlex.split(rest) if rest else [b]
         except ValueError:
