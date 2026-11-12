@@ -40,7 +40,10 @@ if the updater is missing the click says so instead of failing silently.
 - **Desktop environments:** KDE Plasma (supported), GNOME, XFCE, MATE, Cinnamon, LXQt
 - **Window managers / compositors:** Hyprland, Sway, i3 (Wayland/X11 as applicable)
 - **Desktop shells / environments:** <!-- # this is truly my power --> [Event Horizon](https://github.com/Event-Horizon-desktop-environment/Event-Horizon) is recognized/detected
+- **Distributions:** works broadly on Linux; installer/`--doctor` detect distro/family from `/etc/os-release` (including Void Linux/xbps, Arch, Debian/Ubuntu/Mint/Pop!_OS/PikaOS, Fedora/RHEL-like, openSUSE, etc.).
 - **Core:** Qt app, needs a display (Wayland or X11). Bind `maid-runner --toggle` in your environment's shortcut/keybind settings (e.g. Plasma Shortcuts, GNOME/XFCE/MATE/Cinnamon/LXQt keyboard settings, Hyprland/Sway/i3 config). Installer and `maid-runner --doctor` report detected session/DE/WM.
+
+**Void Linux:** recognized/detected; [oco (Void Community Repository)](https://codeberg.org/oSoWoSo/oco) (`https://repo.osowoso.org`) can provide additional community packages.
 
 ## keybinding 
 

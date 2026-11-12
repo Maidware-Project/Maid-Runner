@@ -14,4 +14,7 @@ Provided by your system/distribution:
 - **KDE Plasma / KWin**, **GNOME**, **XFCE**, **MATE**, **Cinnamon**, **LXQt**, **Hyprland**, **Sway**, **i3** — recognized/supported desktop environments, window managers, and compositors (integration varies; keybinds/shortcuts configured in the environment). No compositor/DE code is bundled.
 - **[Event Horizon](https://github.com/Event-Horizon-desktop-environment/Event-Horizon)** — external Wayland desktop shell/environment; recognized/detected when running. Not bundled; no code copied.
 
+## Void Linux / community repositories (referenced, not bundled)
+- **[oco (vOid Community repOsitory)](https://codeberg.org/oSoWoSo/oco)** (oSoWoSo) — Void Linux xbps-src templates/community binary repository (`https://repo.osowoso.org`); referenced for Void Linux package availability/support. Not bundled.
+
 Everything else in this repository is original Maidware work. Corrections welcome.
