@@ -1,6 +1,11 @@
 # changelog
 
-## Maid Runner v1.1.1 (this release)
+## Maid Runner v1.1.2 (this release)
+
+- **Run:** keep terminal-run commands open after they finish so output from quick commands (e.g. `fastfetch`) stays visible.
+- **Custom commands:** load user-defined commands from `$XDG_CONFIG_HOME/maid-runner/commands.json` (or `~/.config/maid-runner/commands.json`) and show them in the new Commands source.
+
+## Maid Runner v1.1.1
 
 - Installers: fetch package/updates from the latest GitHub release (fallback to main if unavailable).
 

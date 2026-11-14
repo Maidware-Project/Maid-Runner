@@ -130,9 +130,10 @@ def user_shell():
     return None
 
 
-def launch(argv, terminal=False):
+def launch(argv, terminal=False, hold=False):
     """Run detached. terminal=True wraps in the user's terminal — and, when one exists, in the user's own shell
-    (fish, zsh, bash, whatever $SHELL or passwd says), so the window the person sees is their own shell."""
+    (fish, zsh, bash, whatever $SHELL or passwd says), so the window the person sees is their own shell.
+    hold=True keeps the terminal open after a command finishes so its output can be read."""
     if isinstance(argv, str):
         argv = shlex.split(argv)
     if terminal:
@@ -141,7 +142,10 @@ def launch(argv, terminal=False):
             return False
         shell = user_shell()
         if shell and argv:
-            argv = term + [shell, "-c", " ".join(shlex.quote(a) for a in argv)]
+            cmd = " ".join(shlex.quote(a) for a in argv)
+            if hold:
+                cmd = cmd + '; printf "\\nPress Enter to close..."; read -r _'
+            argv = term + [shell, "-c", cmd]
         elif shell:
             argv = term + [shell]
         else:

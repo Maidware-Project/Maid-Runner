@@ -61,6 +61,11 @@ def _app_index(apps):
     return by_bin, terminal
 
 
+def _gui_wants(apps):
+    """Binary name -> Terminal flag from desktop entries."""
+    return _app_index(apps)[1]
+
+
 class RunSource:
     name = "Run"
     show_subtitles = False
@@ -107,4 +112,8 @@ class RunSource:
             argv = [b] + shlex.split(rest) if rest else [b]
         except ValueError:
             return False
-        return launch(argv, terminal=self._terminal.get(b, True))
+        in_terminal = self._terminal.get(b, True)
+        try:
+            return launch(argv, terminal=in_terminal, hold=in_terminal)
+        except TypeError:
+            return launch(argv, terminal=in_terminal)

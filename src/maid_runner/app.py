@@ -41,6 +41,7 @@ from .suite import any_installed
 from .wayland import attach_layer
 from .sources.apps import AppsSource, categories_present, load_apps
 from .sources.calc import CalcSource
+from .sources.custom import CustomCommandsSource
 from .sources.files import FileIndex, FilesSource
 from .sources.maid import MaidSource
 from .sources.run import RunSource
@@ -140,8 +141,13 @@ class RunnerWindow(QDialog):
             self.sources.insert(pos, MaidSource())
         # Start file indexing after the window is shown so opening is not
         # delayed by kicking off a home-directory scan.
-        self.sources += [FilesSource(self._files, start=False), RunSource(apps),
-                         CalcSource(), WebSource()]
+        custom = CustomCommandsSource()
+        tail = [FilesSource(self._files, start=False), RunSource(apps),
+                CalcSource(), WebSource()]
+        if custom.items(""):
+            self.sources += [custom] + tail
+        else:
+            self.sources += tail
         self.source_idx = 0
         self.theme_idx = index_of(load())
         self.rows = []
