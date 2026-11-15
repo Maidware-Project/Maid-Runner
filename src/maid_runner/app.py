@@ -556,6 +556,50 @@ class Service(QObject):
             pass
 
 
+
+def _print_info():
+    """Print session/environment diagnostics (no Qt required)."""
+    import platform
+    print("Maid Runner — session/environment info")
+    print(f"  platform: {platform.system()} {platform.release()}")
+    print(f"  XDG_CURRENT_DESKTOP={os.environ.get('XDG_CURRENT_DESKTOP', '')}")
+    print(f"  XDG_SESSION_DESKTOP={os.environ.get('XDG_SESSION_DESKTOP', '')}")
+    print(f"  XDG_SESSION_TYPE={os.environ.get('XDG_SESSION_TYPE', '')}")
+    print(f"  WAYLAND_DISPLAY={os.environ.get('WAYLAND_DISPLAY', '')}")
+    print(f"  DISPLAY={os.environ.get('DISPLAY', '')}")
+    print(f"  XDG_RUNTIME_DIR={os.environ.get('XDG_RUNTIME_DIR', '')}")
+    print(f"  socket: {toggle.socket_path()}")
+    # Check for running instance
+    running = toggle.send("ping")
+    print(f"  resident instance: {'yes' if running else 'no'}")
+    # Desktop/compositor hints
+    de = " ".join([
+        os.environ.get("XDG_CURRENT_DESKTOP", ""),
+        os.environ.get("XDG_SESSION_DESKTOP", ""),
+        os.environ.get("DESKTOP_SESSION", ""),
+    ]).lower()
+    hints = []
+    if "plasma" in de or "kde" in de:
+        hints.append("KDE Plasma")
+    if "gnome" in de:
+        hints.append("GNOME")
+    if "hyprland" in de:
+        hints.append("Hyprland")
+    if "sway" in de:
+        hints.append("Sway")
+    if "niri" in de:
+        hints.append("Niri")
+    if "velvet" in de:
+        hints.append("Velvet")
+    if "instantos" in de or "instantwm" in de:
+        hints.append("instantOS/instantWM")
+    if hints:
+        print(f"  detected: {', '.join(hints)}")
+    # Qt platform
+    qt_platform = os.environ.get("QT_QPA_PLATFORM", "(auto)")
+    print(f"  QT_QPA_PLATFORM={qt_platform}")
+
+
 def main(argv=None):
     """Open the window, or talk to the instance that already has it.
 
@@ -566,6 +610,29 @@ def main(argv=None):
     """
     import sys
     args = list(sys.argv[1:] if argv is None else argv)
+
+    # Info/diagnostics (no Qt needed)
+    if "--version" in args or "-v" in args:
+        try:
+            from . import __version__
+            print(f"maid-runner {__version__}")
+        except Exception:
+            print("maid-runner (version unknown)")
+        return 0
+
+    if "--info" in args or "--doctor" in args:
+        _print_info()
+        return 0
+
+    if "--help" in args or "-h" in args:
+        print("usage: maid-runner [--toggle|--service|--quit|--info|--version]")
+        print("  --toggle   show/hide the runner window (for keybinds)")
+        print("  --service  start resident instance hidden (for autostart)")
+        print("  --quit     stop the resident instance")
+        print("  --info     print session/environment diagnostics")
+        print("  --version  print version")
+        return 0
+
     mode = "show"
     for flag, name in (("--toggle", "toggle"), ("--service", "service"),
                        ("--quit", "quit")):
