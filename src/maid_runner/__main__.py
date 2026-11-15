@@ -54,7 +54,7 @@ def _early_cli():
         hints = []
         for key, label in [("plasma", "KDE Plasma"), ("kde", "KDE"), ("gnome", "GNOME"),
                            ("hyprland", "Hyprland"), ("sway", "Sway"), ("niri", "Niri"),
-                           ("velvet", "Velvet"), ("instantos", "instantOS"), ("instantwm", "instantWM")]:
+                           ("instantos", "instantOS"), ("instantwm", "instantWM")]:
             if key in de and label not in hints:
                 hints.append(label)
         if hints:
