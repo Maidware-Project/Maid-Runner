@@ -1,200 +1,107 @@
-# Maid Runner - search everything from one key
+# Maid Runner
 
-a launcher and search box (Qt) for kde plasma: a centered search card over a dimmed backdrop. type, hit enter. typing searches every source at once - all applications, the maid suite, files, run, calculator and web - so nothing needs a tab switch first; with the box empty, tab moves between tabs that mirror your app menu (all applications, then the menu's groups: internet, games, multimedia, ...). caps lock cycles the six Maid Scroll palettes. native wayland, no taskbar icon, no accounts, no telemetry.
-```
-src/maid_runner/             the Qt app (window + one module per source)
-src/maid_runner/palettes.py  the six palettes (Maid Scroll source of truth)
-src/maid_runner/scroll.py    list/scroll/set the palette, no display needed
-bin/maid-runner              entry: the Qt app
-bin/maid-scroll              terminal entry for the palettes
-themes/maid-*.rasi           the same six palettes as drun themes (fallback)
-desktop/                     launcher icon (pin it, bind a key to it)
-install.sh                   installer (files only, no packages)
-```
+Maid Runner is a Qt-based launcher/search interface for Linux desktops. It provides a centered search card for quickly finding and launching applications, files, commands, web searches, and Maidware actions.
 
-## quick start
+- **No accounts, no telemetry**
+- **Native Wayland/X11 app behavior** (environment-dependent integrations)
+- **Resident mode** for fast reopen/toggle
+- **Unified search:** typing searches across available sources without manual tab switching
 
+## Features
+- **Applications:** searches XDG desktop entries (including Flatpak exports), respects `NoDisplay`/`Hidden`/`TryExec`
+- **Menu categories:** category tabs (Internet, Games, Multimedia, etc.) when available
+- **Maid actions:** quick access to installed Maidware tool actions
+- **Files:** filename search from home directory (in-memory scan while running)
+- **Run:** PATH binaries (launched in terminal for CLI tools)
+- **Calculator:** safe arithmetic evaluation (AST allowlist)
+- **Web:** shortcuts/prefixes and SearXNG-powered queries; opens in default browser
+- **Palettes:** six Maid Scroll palettes (`dark`, `light`, `tokyo`, `mallow`, `green`, `blue`)
+
+## Quick start
+
+### Install
 ```sh
-# one line, straight from GitHub:
+# GitHub (primary)
 bash <(curl -fsSL https://raw.githubusercontent.com/Maidware-Project/Maid-Runner/main/install.sh)
 
-bash install.sh            # app + palettes + launcher + menu entry
-```
-
-**fallback (if GitHub is unavailable):**
-```sh
+# Codeberg (fallback)
 bash <(curl -fsSL https://codeberg.org/Maidware_Project/Maid-Runner/raw/branch/main/install.sh)
-# clone: git clone --depth 1 https://codeberg.org/Maidware_Project/Maid-Runner.git
 ```
 
-bind `maid-runner --toggle` to a key (below), or run it from your
-apps menu - it *is* an application entry itself. the installer also
-drops an **update maid suite** entry into the applications menu
-(`maid-suite-update`): one click pulls every maid tool from github
-and redeploys them. the machinery is the Maid updater (`update-all.sh`,
-as provided by [Maid Suite](https://github.com/Maidware-Project/Maid-Suite));
-if the updater is missing the click says so instead of failing silently.
+The installer deploys the app, palettes, launcher/desktop entry, and related files (no package installation by itself).
 
-## currently supported
+### Bind a shortcut (recommended)
+Bind `maid-runner --toggle` in your desktop/compositor shortcut settings.
 
-- **Desktop environments:** KDE Plasma (supported), GNOME, XFCE, MATE, Cinnamon, LXQt
-- **Window managers / compositors:** Hyprland, Sway, i3 (Wayland/X11 as applicable)
-- **Desktop shells / environments:** <!-- # this is truly my power --> [Event Horizon](https://github.com/Event-Horizon-desktop-environment/Event-Horizon) and [KineticWE](https://gitlab.com/theblackdon/kineticwe) are recognized/detected
-- **Distributions:** works broadly on Linux; installer/`--doctor` detect distro/family from `/etc/os-release` (including Void Linux/xbps, Arch, Debian/Ubuntu/Mint/Pop!_OS/PikaOS, Fedora/RHEL-like, openSUSE, etc.).
-- **Core:** Qt app, needs a display (Wayland or X11). Bind `maid-runner --toggle` in your environment's shortcut/keybind settings (e.g. Plasma Shortcuts, GNOME/XFCE/MATE/Cinnamon/LXQt keyboard settings, Hyprland/Sway/i3 config). Installer and `maid-runner --doctor` report detected session/DE/WM.
+Example (KDE Plasma):
+1. **System Settings → Keyboard → Shortcuts → Custom Shortcuts**
+2. Add **Command/URL**
+3. Command: `~/.local/bin/maid-runner --toggle`
+4. Assign a key (e.g. `Meta+Space`)
 
-**Void Linux:** recognized/detected; [oco (Void Community Repository)](https://codeberg.org/oSoWoSo/oco) (`https://repo.osowoso.org`) can provide additional community packages.
+## Usage
 
-## keybinding 
-
-the repo never sets keybinds - that's personal config and stays on
-your machine. to bind it on Plasma:
-
-1. Settings → Keyboard → Shortcuts → Custom Shortcuts
-2. Add → Command/URL, command: `~/.local/bin/maid-runner --toggle`
-3. set whatever key feels right (Meta+Space is the classic runner key)
-
-with `--toggle` one key both opens and closes the window; plain
-`maid-runner` always opens it. typing finds things from every source
-at once - no tab switch needed; with the box empty, TAB browses the
-tabs (shift+TAB goes back). enter runs, esc - or a click outside the
-card - closes. caps lock cycles the six palettes and stores the pick,
-so the next launch opens on it. empty query on Maid lists every
-suite action. opening and closing is a short fade at your desktop's
-animation speed (Plasma: animations set off means an instant swap).
-
-## resident
-
-the first launch stays around: closing the window hides it, and every
-later open is a repaint - instant - not a start. a second launch just
-hands over a word over a unix socket
-(`$XDG_RUNTIME_DIR/maid-runner.sock`) and exits.
-
-- `maid-runner`           open the window (starts the resident if none)
-- `maid-runner --toggle`  open if hidden, close if open - the keybind command
-- `maid-runner --service` start hidden and wait (autostart at login, your call)
-- `maid-runner --quit`    stop the resident
-
-on KWin the window is a wayland layer surface, so it never shows in
-the taskbar or alt-tab.
-
-## sources
-
-- **Applications** - parsed from the same XDG menu data KDE shows
-  (honors NoDisplay/Hidden/TryExec, flatpak exports included).
-  terminal apps open in your terminal.
-- **the menu's groups** - internet, games, multimedia, graphics,
-  office, utilities, development, system, help: one tab per group that
-  has apps here, in the app manager's order. an app that honestly
-  sits in two categories sits in both tabs.
-- **Maid** - full use of the suite: earbuds to PC/phone/off/radio,
-  system check/update, share to phone, receive from phone, helper
-  check/fix. anything printing runs in a terminal; instant actions
-  run silent. the tab appears once at least one Maid tool is
-  installed.
-- **Files** - your files by name, from your home folder. scanned in
-  the background while the runner is up, answered from memory; no
-  database, nothing stored.
-- **Run** - PATH binaries, always in a terminal so CLI tools work.
-- **Calculator** - safe arithmetic only (AST allowlist, never eval);
-  enter copies the result.
-- **Web** - `yt`/`wiki`/`gh`/`g`/`ddg`/`aw`/`aur`/`so` prefixes,
-  `!bang` goes to duckduckgo, bare URLs open directly, anything else
-  asks SearXNG. every result opens in your default browser, never
-  inside the runner.
-
-## search
-
-bare text goes to [SearXNG](https://github.com/searxng/searxng), a free
-and open source metasearch engine. it is the official search behind
-Maid Runner on purpose: no profiles, no ad tracking, results pulled
-from many engines at once, so your searches stay yours. whatever you
-open - a search or a URL - opens in your default browser; the runner
-itself makes no network calls.
-
-the default instance is `search.jeremyh.xyz`. it is open source, so
-any public instance works - point the runner at another one with
-`MAID_RUNNER_SEARX`:
-
+### Commands
 ```sh
-MAID_RUNNER_SEARX=https://searxng.site maid-runner   # use another instance
+maid-runner            # open (starts resident instance if needed)
+maid-runner --toggle   # open if hidden, close if open
+maid-runner --service  # start hidden and wait (optional autostart)
+maid-runner --quit     # stop resident instance
 ```
 
-## weight
+### Interaction basics
+- **Type** to search across sources
+- **Enter** to run/open selected result
+- **Esc** or click outside the card to close
+- **Tab / Shift+Tab** to browse tabs when query is empty
+- **Caps Lock** cycles palettes and persists selection
 
-the whole cost is one qt process. measured on a plasma wayland
-session: about 40 MB of its own while it waits before the first open
-(raw process size ~80 MB; the rest is qt6, shared with the rest of
-your desktop), about 75 MB of its own once the window has been built
-(raw ~135 MB). nothing else grows between opens. no database and no
-second process: the file list lives in memory while the runner does,
-and is gone when it is.
-
-## why not krunner / rofi / albert?
-
-krunner is plugins-in-process and does what Plasma says. rofi is
-superb but dumb (and themed separately). Maid Runner is one focused
-search box whose best source - the Maid tab - knows *your* system:
-earbuds state, pending updates, share targets.
-
-## themes
-
-six palettes ship in the app: `dark` (breeze match), `light`, `tokyo`
-(the default), `mallow`, `green`, `blue`. the chosen one is one line of
-state under `~/.config/maid-scroll/`, written by the app (caps lock) and
-by `maid-scroll`:
-
+### Palettes (Maid Scroll)
 ```sh
-maid-scroll list         # every palette, star on the current one
-maid-scroll next         # advance one, keep it
-maid-scroll set mallow   # jump straight to one
+maid-scroll list
+maid-scroll next
+maid-scroll set mallow
 ```
 
-the installer can set the active palette at install time:
-
+Set palette during install:
 ```sh
-bash install.sh --set mallow      # store mallow as the active palette
+bash install.sh --set mallow
 ```
 
-## after a big system upgrade
+## Supported platforms (best effort)
+- **Desktops:** KDE Plasma, GNOME, XFCE, MATE, Cinnamon, LXQt
+- **Compositors/WMs:** Hyprland, Sway, i3 (Wayland/X11 as applicable)
+- **Shells/environments:** Event Horizon and KineticWE detected/reported where applicable
+- **Distributions:** broad Linux support; installer/`--doctor` detect distro/family
 
-If a system upgrade runs while the session is up (zypper dist-upgrade
-and friends), Qt, PipeWire and the GL stack get swapped under the
-running desktop. The old binaries keep executing the libraries no
-longer on disk, and within minutes that bites: observed here -
-plasmashell dying in a qml timer callback and kwin printing 
-EGL_BAD_MATCH after the swap (2026-10-19), plus two earlier pipewire
-module crashes (2026-10-14).
+> Requires a graphical session (Wayland or X11). Keybinding setup is user-managed and environment-specific.
 
-Maid Runner itself survives this untouched (it is just a Qt app), but
-its playground should not run half-covered stacks. After a big
-upgrade, log out and back in before trusting the session. Systemd
-restarts plasmashell in about a second, but that restart alone leaves
-part of the desktop on old libraries while the rest rides new ones.
+## Search behavior
+- Bare text queries are sent to SearXNG (default instance: `search.jeremyh.xyz`, configurable via `MAID_RUNNER_SEARX`)
+- Results/URLs open in your default browser
+- Maid Runner itself does not embed browsing; network use is for search queries as configured
 
-## NixOS (flakes & home-manager)
-
+## NixOS (flakes & Home Manager)
 ```nix
-# flake.nix (your config)
-inputs.maid-runner.url = "github:Maidware-Project/Maid-Runner"; # tracks main
-
-# home-manager
+inputs.maid-runner.url = "github:Maidware-Project/Maid-Runner";
 imports = [ inputs.maid-runner.homeManagerModules.default ];
 programs.maid-runner.enable = true;
 ```
 
-**auto-update on every rebuild/switch:** track `main` and rebuild with refresh: `nix flake update maid-runner && home-manager switch --flake .#<user>` (or `sudo nixos-rebuild switch --flake .#<host> --refresh`).
-
-bind `maid-runner --toggle` in your compositor/desktop (Plasma shortcuts, Hyprland/Sway binds). quick try: `nix run github:Maidware-Project/Maid-Runner`.
-
-## uninstall
-
+Try without installing:
 ```sh
-bash install.sh --uninstall            # app + entry out
+nix run github:Maidware-Project/Maid-Runner
 ```
 
-your Maid Scroll state is left in `~/.config/maid-scroll/`.
+## Uninstall
+```sh
+bash install.sh --uninstall
+```
+Maid Scroll state in `~/.config/maid-scroll/` is left in place.
+
+## Notes
+- After major system/library upgrades during a running session, logging out/in can help avoid mixed-runtime desktop issues (Qt/PipeWire/GL stack swaps).
+- Documentation (in-repo): [`docs/wiki/`](docs/wiki/Home.md)
 
 ## License
-
-GPL-3.0-or-later — forkable and open source. See `LICENSE`. Part of the Maidware Project
+GPL-3.0-or-later. See [`LICENSE`](LICENSE). Part of the [Maidware Project](https://maidware-project.github.io/).
