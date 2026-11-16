@@ -61,7 +61,7 @@ HINT = "tab switch  ·  shift+tab back  ·  enter run  ·  esc close  ·  caps l
 
 # Open/close fade lengths before the desktop's animation speed scales
 # them; short on purpose, a launcher should feel snappy.
-FADE_IN_MS, FADE_OUT_MS = 140, 110
+FADE_IN_MS, FADE_OUT_MS = 70, 50
 
 
 def animation_duration(base_ms):
@@ -119,10 +119,7 @@ class RunnerWindow(QDialog):
         self._dmenu_mode = dmenu_lines is not None
         self._dmenu_lines = dmenu_lines or []
         self.setWindowTitle("Maid Runner")
-        # Match the installed desktop entry's Icon= so the taskbar and
-        # window list show the search glyph instead of a generic one.
-        self.setWindowIcon(QIcon.fromTheme(
-            "system-search", QIcon.fromTheme("application-x-executable")))
+        # No window icon: keep the launcher visually minimal.
         self.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.FramelessWindowHint)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
 
@@ -307,8 +304,11 @@ class RunnerWindow(QDialog):
             self._anim.stop()
             self._anim.deleteLater()
             self._anim = None
-        ms = animation_duration(base_ms)
-        if ms <= 0:  # animations turned off in the desktop's settings
+        if getattr(self, "_dmenu_mode", False):
+            ms = 0
+        else:
+            ms = animation_duration(base_ms)
+        if ms <= 0:  # animations turned off or dmenu mode (instant)
             self._set_fade(to)
             if after is not None:
                 after()
@@ -336,8 +336,10 @@ class RunnerWindow(QDialog):
             if not hasattr(self, '_dmenu_selected'):
                 self._dmenu_cancelled = True
             self._dmenu_selected = False  # prevent double-handling
-            # In dmenu mode quit promptly
-            QApplication.instance().quit()
+            # In dmenu mode quit promptly (no fade)
+            app = QApplication.instance()
+            if app is not None:
+                app.quit()
             return
         self.dismiss(quit_after=True)
 
