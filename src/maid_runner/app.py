@@ -27,12 +27,12 @@ import configparser
 import os
 
 from PyQt6.QtCore import (QEasingCurve, QObject, QSocketNotifier, Qt,
-                          QVariantAnimation)
-from PyQt6.QtGui import QColor, QIcon, QPainter, QPalette
+                          QVariantAnimation, QEvent)
+from PyQt6.QtGui import QColor, QFontMetrics, QIcon, QPainter, QPalette
 from PyQt6.QtWidgets import (QApplication, QDialog, QFrame,
                              QGraphicsDropShadowEffect, QGraphicsOpacityEffect,
                              QHBoxLayout, QLabel, QLineEdit, QListWidget,
-                             QListWidgetItem, QStackedWidget, QStyleFactory,
+                             QListWidgetItem, QSizePolicy, QStackedWidget, QStyleFactory,
                              QVBoxLayout, QWidget)
 
 from . import toggle
@@ -86,6 +86,39 @@ def animation_duration(base_ms):
     if factor <= 0:
         return 0
     return max(50, round(base_ms * factor))
+
+
+
+class ElideLabel(QLabel):
+    """Single-line label that elides instead of wrapping."""
+
+    def __init__(self, text="", elide=Qt.TextElideMode.ElideRight, parent=None):
+        super().__init__(parent)
+        self._full = str(text)
+        self._elide = elide
+        self.setWordWrap(False)
+        self.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
+        super().setText(self._full)
+        self._update_elide()
+
+    def setText(self, text):  # noqa: N802
+        self._full = str(text)
+        self._update_elide()
+
+    def fullText(self):
+        return self._full
+
+    def resizeEvent(self, event):  # noqa: N802
+        super().resizeEvent(event)
+        self._update_elide()
+
+    def _update_elide(self):
+        w = max(0, self.contentsRect().width())
+        if w <= 0:
+            super().setText(self._full)
+            return
+        fm = QFontMetrics(self.font())
+        super().setText(fm.elidedText(self._full, self._elide, w))
 
 
 def _rgba(hex_color, alpha):
@@ -413,12 +446,14 @@ class RunnerWindow(QDialog):
         col = QVBoxLayout()
         col.setContentsMargins(0, 0, 0, 0)
         col.setSpacing(1)
-        t = QLabel(title)
+        t = ElideLabel(title)
         t.setObjectName("title")
+        t.setToolTip(title)
         col.addWidget(t)
         if show_sub and sub:
-            s = QLabel(sub)
+            s = ElideLabel(sub, elide=Qt.TextElideMode.ElideMiddle)
             s.setObjectName("sub")
+            s.setToolTip(sub)
             col.addWidget(s)
         row.addLayout(col, 1)
         return w
