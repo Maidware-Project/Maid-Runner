@@ -2,7 +2,6 @@
 
 Maid Runner is a Qt-based launcher/search interface for Linux desktops. It provides a centered search card for quickly finding and launching applications, files, commands, web searches, and Maidware actions.
 
-- **No accounts, no telemetry**
 - **Native Wayland/X11 app behavior** (environment-dependent integrations)
 - **Resident mode** for fast reopen/toggle
 - **Unified search:** typing searches across available sources without manual tab switching
