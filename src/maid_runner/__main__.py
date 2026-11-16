@@ -22,12 +22,13 @@ def _early_cli():
         return 0
 
     if "--help" in args or "-h" in args:
-        print("usage: maid-runner [--toggle|--service|--quit|--info|--version|--help]")
+        print("usage: maid-runner [--toggle|--service|--quit|--info|--version|--dmenu|--help]")
         print("  --toggle   show/hide the runner window (for keybinds)")
         print("  --service  start resident instance hidden (for autostart)")
         print("  --quit     stop the resident instance")
         print("  --info     print session/environment diagnostics")
         print("  --version  print version")
+        print("  --dmenu    read items from stdin, print selection to stdout (scripting)")
         print("  --help     show this help")
         return 0
 

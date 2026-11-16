@@ -42,6 +42,7 @@ from .wayland import attach_layer
 from .sources.apps import AppsSource, categories_present, load_apps
 from .sources.calc import CalcSource
 from .sources.custom import CustomCommandsSource
+from .sources.dmenu import DmenuSource
 from .sources.files import FileIndex, FilesSource
 from .sources.maid import MaidSource
 from .sources.run import RunSource
@@ -113,8 +114,10 @@ QListWidget#list::item:selected {{ background-color: {_rgba(p['accent'], 0.15)};
 
 
 class RunnerWindow(QDialog):
-    def __init__(self, files_index=None):
+    def __init__(self, files_index=None, dmenu_lines=None):
         super().__init__()
+        self._dmenu_mode = dmenu_lines is not None
+        self._dmenu_lines = dmenu_lines or []
         self.setWindowTitle("Maid Runner")
         # Match the installed desktop entry's Icon= so the taskbar and
         # window list show the search glyph instead of a generic one.
@@ -127,27 +130,30 @@ class RunnerWindow(QDialog):
         # shared with the service so a daemon started at login has the
         # file list warm by the time the first toggle arrives.
         self._files = files_index if files_index is not None else FileIndex()
-        apps = load_apps()
-        self.sources = [AppsSource(apps)]
-        for category in categories_present(apps):
-            self.sources.append(AppsSource(apps, category=category))
-        # The Maid tab drives the other tools, so it only earns its
-        # place when at least one of them is installed - the suite is
-        # independent tool by tool. It sits where the app manager keeps
-        # its Maid group: among the categories, just before Development.
-        if any_installed():
-            pos = next((i for i, s in enumerate(self.sources)
-                        if s.name == "Development"), len(self.sources))
-            self.sources.insert(pos, MaidSource())
-        # Start file indexing after the window is shown so opening is not
-        # delayed by kicking off a home-directory scan.
-        custom = CustomCommandsSource()
-        tail = [FilesSource(self._files, start=False), RunSource(apps),
-                CalcSource(), WebSource()]
-        if custom.items(""):
-            self.sources += [custom] + tail
+        if self._dmenu_mode:
+            self.sources = [DmenuSource(self._dmenu_lines)]
         else:
-            self.sources += tail
+            apps = load_apps()
+            self.sources = [AppsSource(apps)]
+            for category in categories_present(apps):
+                self.sources.append(AppsSource(apps, category=category))
+            # The Maid tab drives the other tools, so it only earns its
+            # place when at least one of them is installed - the suite is
+            # independent tool by tool. It sits where the app manager keeps
+            # its Maid group: among the categories, just before Development.
+            if any_installed():
+                pos = next((i for i, s in enumerate(self.sources)
+                            if s.name == "Development"), len(self.sources))
+                self.sources.insert(pos, MaidSource())
+            # Start file indexing after the window is shown so opening is not
+            # delayed by kicking off a home-directory scan.
+            custom = CustomCommandsSource()
+            tail = [FilesSource(self._files, start=False), RunSource(apps),
+                    CalcSource(), WebSource()]
+            if custom.items(""):
+                self.sources += [custom] + tail
+            else:
+                self.sources += tail
         self.source_idx = 0
         self.theme_idx = index_of(load())
         self.rows = []
@@ -325,6 +331,10 @@ class RunnerWindow(QDialog):
         # process does not linger resident and hold memory. The next
         # hotkey invocation starts a fresh instance.
         event.ignore()
+        if self._dmenu_mode:
+            import sys
+            # dmenu convention: exit 1 on cancel/no selection
+            self._dmenu_cancelled = True
         self.dismiss(quit_after=True)
 
     def apply_theme(self):
@@ -464,6 +474,12 @@ class RunnerWindow(QDialog):
         row = self.list.currentRow()
         if 0 <= row < len(self.rows):
             _t, _s, _icon, payload, row_src = self.rows[row]
+            if self._dmenu_mode:
+                # dmenu mode: print selection to stdout and exit
+                import sys
+                print(payload, flush=True)
+                QApplication.instance().quit()
+                return
             if row_src.activate(payload):
                 # Launch is handed off; quit so the process does not linger
                 # resident and hold memory after the user is done with it.
@@ -632,6 +648,21 @@ def main(argv=None):
         print("  --info     print session/environment diagnostics")
         print("  --version  print version")
         return 0
+
+    # dmenu mode: read stdin, show selection UI, print choice to stdout
+    if "--dmenu" in args or "-d" in args:
+        dmenu_lines = sys.stdin.read().splitlines() if not sys.stdin.isatty() else []
+        # Also support -p for prompt (future) and positional args as items
+        app = QApplication.instance() or QApplication(sys.argv)
+        app.setApplicationName("Maid Runner")
+        win = RunnerWindow(dmenu_lines=dmenu_lines)
+        win._dmenu_cancelled = False
+        win.pop_up()
+        rc = app.exec()
+        # Exit 1 if cancelled without selection (dmenu convention)
+        if getattr(win, "_dmenu_cancelled", False):
+            return 1
+        return rc
 
     mode = "show"
     for flag, name in (("--toggle", "toggle"), ("--service", "service"),

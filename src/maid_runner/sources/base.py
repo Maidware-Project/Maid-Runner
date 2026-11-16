@@ -130,6 +130,19 @@ def user_shell():
     return None
 
 
+def _session_env():
+    """Environment for launched apps: preserve session vars important for Wayland/X11/portals."""
+    env = os.environ.copy()
+    # Ensure critical session variables are present for child processes
+    for var in ("XDG_RUNTIME_DIR", "WAYLAND_DISPLAY", "DISPLAY",
+                "XDG_SESSION_TYPE", "XDG_CURRENT_DESKTOP", "XDG_SESSION_DESKTOP",
+                "DBUS_SESSION_BUS_ADDRESS", "PATH", "HOME", "SHELL"):
+        val = os.environ.get(var)
+        if val and var not in env:
+            env[var] = val
+    return env
+
+
 def launch(argv, terminal=False, hold=False):
     """Run detached. terminal=True wraps in the user's terminal — and, when one exists, in the user's own shell
     (fish, zsh, bash, whatever $SHELL or passwd says), so the window the person sees is their own shell.
@@ -152,7 +165,8 @@ def launch(argv, terminal=False, hold=False):
             argv = term + list(argv)
     try:
         subprocess.Popen(argv, start_new_session=True,
-                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                         env=_session_env())
         return True
     except (OSError, ValueError):
         return False
