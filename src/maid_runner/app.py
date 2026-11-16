@@ -332,9 +332,13 @@ class RunnerWindow(QDialog):
         # hotkey invocation starts a fresh instance.
         event.ignore()
         if self._dmenu_mode:
-            import sys
-            # dmenu convention: exit 1 on cancel/no selection
-            self._dmenu_cancelled = True
+            # If a selection was already made, don't mark as cancelled
+            if not hasattr(self, '_dmenu_selected'):
+                self._dmenu_cancelled = True
+            self._dmenu_selected = False  # prevent double-handling
+            # In dmenu mode quit promptly
+            QApplication.instance().quit()
+            return
         self.dismiss(quit_after=True)
 
     def apply_theme(self):
@@ -477,6 +481,8 @@ class RunnerWindow(QDialog):
             if self._dmenu_mode:
                 # dmenu mode: print selection to stdout and exit
                 import sys
+                self._dmenu_cancelled = False
+                self._dmenu_selected = True
                 print(payload, flush=True)
                 QApplication.instance().quit()
                 return
