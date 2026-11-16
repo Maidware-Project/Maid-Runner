@@ -126,10 +126,13 @@ class RunnerWindow(QDialog):
         # The process is resident (main() keeps it alive); the index is
         # shared with the service so a daemon started at login has the
         # file list warm by the time the first toggle arrives.
-        self._files = files_index if files_index is not None else FileIndex()
         if self._dmenu_mode:
+            # Dmenu mode is a lightweight picker over stdin: skip app/file
+            # indexing and other source initialization for fast startup.
+            self._files = None
             self.sources = [DmenuSource(self._dmenu_lines)]
         else:
+            self._files = files_index if files_index is not None else FileIndex()
             apps = load_apps()
             self.sources = [AppsSource(apps)]
             for category in categories_present(apps):
@@ -240,8 +243,9 @@ class RunnerWindow(QDialog):
         """Bring the window up ready for typing (the keybind path)."""
         # Index files in the background after the UI is up so opening
         # stays responsive; refresh() is a no-op if a scan ran recently.
-        self._files.start()
-        self._files.refresh()
+        if self._files is not None:
+            self._files.start()
+            self._files.refresh()
         if self.search.text():
             self.search.clear()  # textChanged refreshes the list
         else:
