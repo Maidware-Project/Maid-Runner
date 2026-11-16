@@ -1,5 +1,10 @@
 # changelog
 
+## Maid Runner v1.1.5
+
+- **Performance:** skip file/app indexing and source initialization in `--dmenu` mode for faster, lighter startup.
+- **Nix:** add `shell.nix`, `devShells`, and `formatter` outputs; update `flake.lock` and package metadata for better native Nix/NixOS development and usage.
+
 ## Maid Runner v1.1.2 (this release)
 
 - **Run:** keep terminal-run commands open after they finish so output from quick commands (e.g. `fastfetch`) stays visible.

@@ -15,7 +15,7 @@
           runtimePath = pkgs.lib.makeBinPath [ pkgs.bash pkgs.coreutils pkgs.procps pkgs.util-linux ];
           maid-runner = pkgs.stdenv.mkDerivation {
             pname = "maid-runner";
-            version = "1.1.1";
+            version = "1.1.5";
             src = self;
             nativeBuildInputs = [ pkgs.makeWrapper pkgs.qt6.wrapQtAppsHook ];
             buildInputs = [ pkgs.qt6.qtbase ];
@@ -50,6 +50,22 @@
 
       apps = forAllSystems (system: { default = { type = "app"; program = "${self.packages.${system}.default}/bin/maid-runner"; }; });
       checks = forAllSystems (system: { package = self.packages.${system}.default; });
+
+      devShells = forAllSystems (system:
+        let
+          pkgs = nixpkgs.legacyPackages.${system};
+          py = pkgs.python3.withPackages (ps: [ ps.pyqt6 ]);
+        in {
+          default = pkgs.mkShell {
+            packages = with pkgs; [ bash coreutils procps util-linux py qt6.qtbase qt6.qtwayland shellcheck nixfmt-rfc-style ];
+            shellHook = ''
+              export PYTHONPATH="$PWD/src''${PYTHONPATH:+:$PYTHONPATH}"
+              echo "Maid Runner dev shell (nix develop)"
+            '';
+          };
+        });
+
+      formatter = forAllSystems (system: nixpkgs.legacyPackages.${system}.nixfmt-rfc-style);
 
       # easy: imports = [ inputs.maid-runner.homeManagerModules.default ]; programs.maid-runner.enable = true;
       homeManagerModules.default = { config, lib, pkgs, ... }: {
