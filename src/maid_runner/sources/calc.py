@@ -5,7 +5,7 @@ import ast
 import math
 
 _ALLOWED_BINOP = (ast.Add, ast.Sub, ast.Mult, ast.Div, ast.Mod,
-                  ast.Pow, ast.FloorDiv)
+                  ast.FloorDiv)
 _ALLOWED_UNARY = (ast.UAdd, ast.USub)
 _CONSTS = {"pi": math.pi, "e": math.e, "tau": math.tau}
 
@@ -29,7 +29,7 @@ def _eval(node):
             return l % r
         if isinstance(node.op, ast.FloorDiv):
             return l // r
-        return l ** r
+        raise ValueError("not arithmetic")
     if isinstance(node, ast.UnaryOp) and isinstance(node.op, _ALLOWED_UNARY):
         v = _eval(node.operand)
         return +v if isinstance(node.op, ast.UAdd) else -v
@@ -42,13 +42,13 @@ def looks_like_math(text):
     t = (text or "").strip()
     if len(t) < 1 or len(t) > 64:
         return False
-    allowed = set("0123456789+-*/().%^ \tpieatau")
+    allowed = set("0123456789+-*/().% \tpieatau")
     return all(c in allowed for c in t) and any(c.isdigit() for c in t)
 
 
 def compute(text):
     try:
-        val = _eval(ast.parse(text.replace("^", "**"), mode="eval"))
+        val = _eval(ast.parse(text, mode="eval"))
     except Exception:
         return None
     if isinstance(val, float) and val.is_integer():
