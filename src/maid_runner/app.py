@@ -61,7 +61,7 @@ HINT = "tab switch  ·  shift+tab back  ·  enter run  ·  esc close  ·  caps l
 
 # Open/close fade lengths before the desktop's animation speed scales
 # them; short on purpose, a launcher should feel snappy.
-FADE_IN_MS, FADE_OUT_MS = 70, 50
+FADE_IN_MS, FADE_OUT_MS = 50, 35
 
 
 def animation_duration(base_ms):
@@ -71,8 +71,7 @@ def animation_duration(base_ms):
     means the user turned animations off, so the fade collapses to an
     instant swap. Read on every use (one small file) so a change in
     System Settings is felt on the next open. Anything unreadable or
-    nonsense means normal speed; the floor keeps a very small factor
-    from turning the fade into a flicker.
+    nonsense means normal speed.
     """
     path = os.environ.get("MAID_RUNNER_KDE_GLOBALS",
                           os.path.expanduser("~/.config/kdeglobals"))
@@ -85,7 +84,7 @@ def animation_duration(base_ms):
         factor = 1.0
     if factor <= 0:
         return 0
-    return max(50, round(base_ms * factor))
+    return max(0, round(base_ms * factor))
 
 
 
@@ -318,23 +317,12 @@ class RunnerWindow(QDialog):
                 else:
                     # No service wrapper: quit soon to free memory.
                     from PyQt6.QtCore import QTimer
-                    QTimer.singleShot(120000, app.quit)
+                    QTimer.singleShot(30000, app.quit)
 
     def _set_fade(self, value):
-        """One frame of the fade: backdrop alpha + card opacity."""
+        """One frame of the fade: window opacity (cheap, compositor-friendly)."""
         self._fade = max(0.0, min(1.0, float(value)))
-        self.update()  # paintEvent draws the backdrop through _fade
-        # The card fades through a temporary opacity effect; at rest it
-        # comes off again, so an open window pays no compositing cost.
-        eff = self.card_holder.graphicsEffect()
-        if self._fade >= 1.0:
-            if eff is not None:
-                self.card_holder.setGraphicsEffect(None)
-            return
-        if eff is None:
-            eff = QGraphicsOpacityEffect(self.card_holder)
-            self.card_holder.setGraphicsEffect(eff)
-        eff.setOpacity(self._fade)
+        self.setWindowOpacity(self._fade)
 
     def _animate(self, to, base_ms, after=None):
         if self._anim is not None:
@@ -360,6 +348,13 @@ class RunnerWindow(QDialog):
         anim.valueChanged.connect(self._set_fade)
         if after is not None:
             anim.finished.connect(after)
+
+        def _cleanup():
+            if self._anim is anim:
+                self._anim = None
+            anim.deleteLater()
+
+        anim.finished.connect(_cleanup)
         self._anim = anim
         anim.start()
 
@@ -400,9 +395,7 @@ class RunnerWindow(QDialog):
 
     def paintEvent(self, event):  # noqa: N802
         painter = QPainter(self)
-        backdrop = QColor(BACKDROP)
-        backdrop.setAlpha(round(BACKDROP.alpha() * self._fade))
-        painter.fillRect(self.rect(), backdrop)
+        painter.fillRect(self.rect(), QColor(BACKDROP))
         painter.end()
 
     def keyPressEvent(self, event):  # noqa: N802
@@ -559,7 +552,7 @@ class Service(QObject):
             self._idle_timer.stop()
             self._idle_timer = None
 
-    def _schedule_idle_quit(self, ms=120000):
+    def _schedule_idle_quit(self, ms=30000):
         """Quit after inactivity so memory is freed, but keep the
         process around briefly for fast repeated opens."""
         self._cancel_idle_quit()
