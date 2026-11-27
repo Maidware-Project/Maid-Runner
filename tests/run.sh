@@ -54,7 +54,8 @@ assert rank("bwser", a) is not None  # fuzzy fallback
 
 assert ismath("2+2*3") and compute("2+2*3") == 8
 assert compute("(100-15)/17") == 5
-assert compute("2^10") == 1024
+assert not ismath("2^10")
+assert compute("2^10") is None
 assert compute("1/0") is None
 assert not ismath("hello world")
 assert compute("__import__('os').system('x')") is None
