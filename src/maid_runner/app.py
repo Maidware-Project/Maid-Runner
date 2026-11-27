@@ -214,6 +214,9 @@ class RunnerWindow(QDialog):
         # The card rides inside a holder with margin room for the
         # shadow, so the fade effect (on the holder) never clips it.
         self.card_holder = QWidget(self)
+        self._card_opacity = QGraphicsOpacityEffect(self.card_holder)
+        self._card_opacity.setOpacity(1.0)
+        self.card_holder.setGraphicsEffect(self._card_opacity)
         holder_lay = QVBoxLayout(self.card_holder)
         holder_lay.setContentsMargins(30, 30, 30, 30)
         holder_lay.addWidget(self.card)
@@ -304,6 +307,15 @@ class RunnerWindow(QDialog):
     def _hide_now(self):
         self.hide()
         self._going_out = False
+        # Release row widgets and search text to reduce idle memory.
+        try:
+            self.list.clear()
+        except Exception:
+            pass
+        self.rows = []
+        self.search.clear()
+        import gc
+        gc.collect()
         if getattr(self, "_quit_after", False):
             self._quit_after = False
             # Prefer idle-quit so quick reopens stay fast, but do not keep
@@ -320,9 +332,11 @@ class RunnerWindow(QDialog):
                     QTimer.singleShot(30000, app.quit)
 
     def _set_fade(self, value):
-        """One frame of the fade: window opacity (cheap, compositor-friendly)."""
+        """One frame of the fade: backdrop alpha + card opacity."""
         self._fade = max(0.0, min(1.0, float(value)))
-        self.setWindowOpacity(self._fade)
+        if hasattr(self, "_card_opacity"):
+            self._card_opacity.setOpacity(self._fade)
+        self.update()
 
     def _animate(self, to, base_ms, after=None):
         if self._anim is not None:
@@ -395,7 +409,9 @@ class RunnerWindow(QDialog):
 
     def paintEvent(self, event):  # noqa: N802
         painter = QPainter(self)
-        painter.fillRect(self.rect(), QColor(BACKDROP))
+        color = QColor(BACKDROP)
+        color.setAlpha(int(BACKDROP.alpha() * self._fade))
+        painter.fillRect(self.rect(), color)
         painter.end()
 
     def keyPressEvent(self, event):  # noqa: N802

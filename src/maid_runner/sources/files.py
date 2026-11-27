@@ -26,7 +26,7 @@ _PRUNE = frozenset((
 
 # Nobody scrolls this far; the cap keeps a monster home from eating
 # memory for rows that do not matter.
-_MAX_FILES = 40000
+_MAX_FILES = 10000
 
 
 def _roots():
