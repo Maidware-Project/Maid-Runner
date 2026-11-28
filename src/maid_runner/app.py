@@ -336,11 +336,14 @@ class RunnerWindow(QDialog):
         self._fade = max(0.0, min(1.0, float(value)))
         if hasattr(self, "_card_opacity"):
             if self._fade >= 1.0:
-                self._card_opacity.setOpacity(1.0)
-                if self.card_holder.graphicsEffect() is self._card_opacity:
+                if self._card_opacity is not None:
+                    self._card_opacity.setOpacity(1.0)
+                    # setGraphicsEffect(None) deletes the owned effect.
                     self.card_holder.setGraphicsEffect(None)
+                    self._card_opacity = None
             else:
-                if self.card_holder.graphicsEffect() is not self._card_opacity:
+                if self._card_opacity is None:
+                    self._card_opacity = QGraphicsOpacityEffect(self.card_holder)
                     self.card_holder.setGraphicsEffect(self._card_opacity)
                 self._card_opacity.setOpacity(self._fade)
         self.update()
@@ -360,7 +363,8 @@ class RunnerWindow(QDialog):
                 after()
             return
         if to < 1.0 or self._fade < 1.0:
-            if self.card_holder.graphicsEffect() is not self._card_opacity:
+            if self._card_opacity is None:
+                self._card_opacity = QGraphicsOpacityEffect(self.card_holder)
                 self.card_holder.setGraphicsEffect(self._card_opacity)
         anim = QVariantAnimation(self)
         anim.setStartValue(self._fade)
