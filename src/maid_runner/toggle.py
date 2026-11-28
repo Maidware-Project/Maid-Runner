@@ -21,7 +21,16 @@ def socket_path():
     runtime = os.environ.get("XDG_RUNTIME_DIR")
     if runtime and os.path.isdir(runtime):
         return os.path.join(runtime, "maid-runner.sock")
-    return os.path.join("/tmp", f"maid-runner-{os.getuid()}.sock")
+    base = os.path.join("/tmp", f"maid-runner-{os.getuid()}")
+    try:
+        os.makedirs(base, mode=0o700, exist_ok=True)
+        try:
+            os.chmod(base, 0o700)
+        except OSError:
+            pass
+    except OSError:
+        return os.path.join("/tmp", f"maid-runner-{os.getuid()}.sock")
+    return os.path.join(base, "sock")
 
 
 def send(word, timeout=0.5):

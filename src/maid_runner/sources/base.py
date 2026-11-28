@@ -158,7 +158,8 @@ def launch(argv, terminal=False, hold=False):
             cmd = " ".join(shlex.quote(a) for a in argv)
             if hold:
                 cmd = cmd + '; printf "\\nPress Enter to close..."; read -r _'
-            argv = term + [shell, "-c", cmd]
+            # Use /bin/sh for POSIX-safe quoting; user's shell is kept for interactive terminals.
+            argv = term + ["/bin/sh", "-c", cmd]
         elif shell:
             argv = term + [shell]
         else:
