@@ -73,11 +73,12 @@ def _parse_desktop(path):
         return None
     if e.get("Hidden", "false").lower() == "true":
         return None
+    desktop_envs = {"KDE", "SonicDE"}
     only = e.get("OnlyShowIn", "")
-    if only and "KDE" not in [s.strip() for s in only.split(";")]:
+    if only and not (desktop_envs & {s.strip() for s in only.split(";")}):
         return None
     notshow = e.get("NotShowIn", "")
-    if "KDE" in [s.strip() for s in notshow.split(";")]:
+    if desktop_envs & {s.strip() for s in notshow.split(";")}:
         return None
     if e.get("Type", "Application") != "Application":
         return None

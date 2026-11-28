@@ -497,26 +497,28 @@ class RunnerWindow(QDialog):
             self.rows = [(*row, src) for row in src.items(query)]
         # Rebuild the visible rows; drop old item widgets so repeated
         # searches do not accumulate them in memory.
-        while self.list.count():
-            item = self.list.takeItem(0)
-            w = self.list.itemWidget(item)
-            if w is not None:
-                w.deleteLater()
-            del item
-        self.list.clear()
-        for title, sub, icon, _payload, row_src in self.rows[:40]:
-            if SUBTITLE_MODE == "all":
-                show_sub = True
-            elif SUBTITLE_MODE == "none":
-                show_sub = False
-            else:
-                show_sub = getattr(row_src, "show_subtitles", False)
-            item = QListWidgetItem()
-            row = self._row_widget(title, sub, icon, show_sub)
-            item.setSizeHint(row.sizeHint())
-            self.list.addItem(item)
-            self.list.setItemWidget(item, row)
-        self.list.setCurrentRow(0)
+        self.list.setUpdatesEnabled(False)
+        try:
+            while self.list.count():
+                item = self.list.takeItem(0)
+                w = self.list.itemWidget(item)
+                if w is not None:
+                    w.deleteLater()
+            for title, sub, icon, _payload, row_src in self.rows[:40]:
+                if SUBTITLE_MODE == "all":
+                    show_sub = True
+                elif SUBTITLE_MODE == "none":
+                    show_sub = False
+                else:
+                    show_sub = getattr(row_src, "show_subtitles", False)
+                item = QListWidgetItem()
+                row = self._row_widget(title, sub, icon, show_sub)
+                item.setSizeHint(row.sizeHint())
+                self.list.addItem(item)
+                self.list.setItemWidget(item, row)
+            self.list.setCurrentRow(0 if self.rows else -1)
+        finally:
+            self.list.setUpdatesEnabled(True)
         if self.rows:
             self.stack.setCurrentWidget(self.list)
         else:
@@ -651,6 +653,8 @@ def _print_info():
         os.environ.get("DESKTOP_SESSION", ""),
     ]).lower()
     hints = []
+    if "sonicde" in de:
+        hints.append("SonicDE")
     if "plasma" in de or "kde" in de:
         hints.append("KDE Plasma")
     if "gnome" in de:

@@ -53,7 +53,7 @@ def _early_cli():
             os.environ.get("DESKTOP_SESSION", ""),
         ]).lower()
         hints = []
-        for key, label in [("plasma", "KDE Plasma"), ("kde", "KDE"), ("gnome", "GNOME"),
+        for key, label in [("sonicde", "SonicDE"), ("plasma", "KDE Plasma"), ("kde", "KDE"), ("gnome", "GNOME"),
                            ("hyprland", "Hyprland"), ("sway", "Sway"), ("niri", "Niri"),
                            ("instantos", "instantOS"), ("instantwm", "instantWM")]:
             if key in de and label not in hints:
