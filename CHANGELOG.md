@@ -1,5 +1,11 @@
 # changelog
 
+## Maid Runner v1.1.7
+
+- **Search:** batch list rebuilds during refresh and remove redundant clear to reduce fast typing flicker.
+- **Animation:** keep a minimum visible fade when animation factor is small.
+- **Desktop:** recognize SonicDE (`XDG_CURRENT_DESKTOP=SonicDE:KDE`) for app filtering and session diagnostics.
+
 ## Maid Runner v1.1.6
 
 - **UI:** elide long titles/subtitles instead of wrapping result rows.
