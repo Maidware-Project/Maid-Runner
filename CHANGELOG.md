@@ -1,5 +1,10 @@
 # changelog
 
+## Maid Runner v1.1.8
+
+- **Fix:** avoid deleting reused fade opacity effect (prevents close/fade crash).
+- **Hardening:** use POSIX-safe `/bin/sh -c` for terminal command wrapping and a user-owned 0700 fallback socket directory.
+
 ## Maid Runner v1.1.7
 
 - **Search:** batch list rebuilds during refresh and remove redundant clear to reduce fast typing flicker.

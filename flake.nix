@@ -15,7 +15,7 @@
           runtimePath = pkgs.lib.makeBinPath [ pkgs.bash pkgs.coreutils pkgs.procps pkgs.util-linux ];
           maid-runner = pkgs.stdenv.mkDerivation {
             pname = "maid-runner";
-            version = "1.1.7";
+            version = "1.1.8";
             src = self;
             nativeBuildInputs = [ pkgs.makeWrapper pkgs.qt6.wrapQtAppsHook ];
             buildInputs = [ pkgs.qt6.qtbase ];
