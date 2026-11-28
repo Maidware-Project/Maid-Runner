@@ -84,7 +84,7 @@ def animation_duration(base_ms):
         factor = 1.0
     if factor <= 0:
         return 0
-    return max(0, round(base_ms * factor))
+    return max(50, round(base_ms * factor))
 
 
 
