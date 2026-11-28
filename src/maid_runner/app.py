@@ -335,7 +335,14 @@ class RunnerWindow(QDialog):
         """One frame of the fade: backdrop alpha + card opacity."""
         self._fade = max(0.0, min(1.0, float(value)))
         if hasattr(self, "_card_opacity"):
-            self._card_opacity.setOpacity(self._fade)
+            if self._fade >= 1.0:
+                self._card_opacity.setOpacity(1.0)
+                if self.card_holder.graphicsEffect() is self._card_opacity:
+                    self.card_holder.setGraphicsEffect(None)
+            else:
+                if self.card_holder.graphicsEffect() is not self._card_opacity:
+                    self.card_holder.setGraphicsEffect(self._card_opacity)
+                self._card_opacity.setOpacity(self._fade)
         self.update()
 
     def _animate(self, to, base_ms, after=None):
@@ -352,6 +359,9 @@ class RunnerWindow(QDialog):
             if after is not None:
                 after()
             return
+        if to < 1.0 or self._fade < 1.0:
+            if self.card_holder.graphicsEffect() is not self._card_opacity:
+                self.card_holder.setGraphicsEffect(self._card_opacity)
         anim = QVariantAnimation(self)
         anim.setStartValue(self._fade)
         anim.setEndValue(float(to))
